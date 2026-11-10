@@ -1,0 +1,88 @@
+### Search API test requests (VS Code REST Client, as in Labs 3 to 5)
+# 1. Start the API: npm run dev
+# 2. Make a token:  node ../shared/scripts/make-test-token.js student
+# 3. Paste it below.
+
+@base = http://localhost:3002/api
+@token = PASTE-TOKEN-HERE
+
+### Health check (no login needed) -> 200
+GET {{base}}/health
+
+### ---------- Normal cases ----------
+
+### All alumni, first page -> 200
+GET {{base}}/alumni
+Authorization: Bearer {{token}}
+
+### Search by skill -> 200
+GET {{base}}/alumni?q=python
+Authorization: Bearer {{token}}
+
+### Search by name -> 200
+GET {{base}}/alumni?q=omar
+Authorization: Bearer {{token}}
+
+### Filter by location and industry -> 200
+GET {{base}}/alumni?location=cairo&industry=Cybersecurity
+Authorization: Bearer {{token}}
+
+### Filter by graduation year, newest first, page 1 -> 200
+GET {{base}}/alumni?gradYear=2016&sort=newest&page=1
+Authorization: Bearer {{token}}
+
+### No matches -> 200 with an empty list (not 404)
+GET {{base}}/alumni?q=zzzz
+Authorization: Bearer {{token}}
+
+### ---------- Invalid cases ----------
+
+### Unknown parameter -> 400
+GET {{base}}/alumni?role=admin
+Authorization: Bearer {{token}}
+
+### Industry not in the list -> 400
+GET {{base}}/alumni?industry=Hacking
+Authorization: Bearer {{token}}
+
+### Graduation year in the future -> 400
+GET {{base}}/alumni?gradYear=2099
+Authorization: Bearer {{token}}
+
+### Unsupported sort -> 400
+GET {{base}}/alumni?sort=password
+Authorization: Bearer {{token}}
+
+### Page out of range -> 400
+GET {{base}}/alumni?page=0
+Authorization: Bearer {{token}}
+
+### Same parameter twice -> 400
+GET {{base}}/alumni?q=a&q=b
+Authorization: Bearer {{token}}
+
+### Not a valid id -> 404
+GET {{base}}/alumni/123
+Authorization: Bearer {{token}}
+
+### ---------- Security cases ----------
+
+### No login -> 401
+GET {{base}}/alumni
+
+### Forged token -> 401
+GET {{base}}/alumni
+Authorization: Bearer abc.def
+
+### SQL injection attempt -> 200 with no results, nothing leaks
+GET {{base}}/alumni?q=%27%20OR%201%3D1--
+Authorization: Bearer {{token}}
+
+### Wildcard characters are searched literally -> 200, no results
+GET {{base}}/alumni?q=%25%25
+Authorization: Bearer {{token}}
+
+### Hidden fields: a student must not see a field the owner hid.
+### Pick an id from the results above whose owner hid their location, then compare with an admin token.
+GET {{base}}/alumni/PASTE-PROFILE-ID
+Authorization: Bearer {{token}}

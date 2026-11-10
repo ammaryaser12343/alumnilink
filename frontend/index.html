@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumniLink | Search Alumni</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>AlumniLink</h1>
+    <nav aria-label="Main">
+      <a href="index.html" aria-current="page">Search</a>
+      <!-- Ahmed: add links to the login and profile pages here. Daniel: admin link. -->
+    </nav>
+  </header>
+
+  <main>
+    <section aria-labelledby="search-heading">
+      <h2 id="search-heading">Search the alumni directory</h2>
+
+      <form id="search-form" class="search-form" novalidate>
+        <label>Name or skill
+          <input type="text" id="q" name="q" maxlength="50" placeholder="e.g. python or Omar">
+        </label>
+        <label>Location
+          <input type="text" id="location" name="location" maxlength="100" placeholder="e.g. Cairo">
+        </label>
+        <label>Industry
+          <select id="industry" name="industry">
+            <option value="">Any industry</option>
+          </select>
+        </label>
+        <label>Graduation year
+          <input type="number" id="gradYear" name="gradYear" min="1950" step="1" placeholder="e.g. 2020">
+        </label>
+        <label>Sort by
+          <select id="sort" name="sort">
+            <option value="name">Name (A to Z)</option>
+            <option value="newest">Newest graduates</option>
+            <option value="oldest">Oldest graduates</option>
+          </select>
+        </label>
+        <button type="submit">Search</button>
+      </form>
+
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+      <div id="results" class="results"></div>
+
+      <nav class="pager" aria-label="Result pages">
+        <button type="button" id="prev-page" disabled>Previous</button>
+        <span id="page-info"></span>
+        <button type="button" id="next-page" disabled>Next</button>
+      </nav>
+    </section>
+  </main>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/search.js" defer></script>
+</body>
+</html>
