@@ -1,0 +1,32 @@
+name: alumnilink
+
+services:
+  floci:
+    image: floci/floci:2.5.0-compat
+    ports:
+      - "127.0.0.1:4566:4566"
+    environment:
+      FLOCI_HOSTNAME: floci
+      FLOCI_SERVICES_DOCKER_NETWORK: alumnilink_default
+      FLOCI_SERVICES_UI_BIND_ADDRESS: "127.0.0.1"
+      FLOCI_STORAGE_MODE: persistent
+      FLOCI_STORAGE_PERSISTENT_PATH: /app/data
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - floci-data:/app/data
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: alumnilink
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run the Floci deploy script}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "alumnilink", "-h", "127.0.0.1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  floci-data:
+  postgres-data:
