@@ -1,10 +1,17 @@
 ### Search API test requests (VS Code REST Client, as in Labs 3 to 5)
 # 1. Start the API: npm run dev
 # 2. Make a token:  node ../shared/scripts/make-test-token.js student
-# 3. Paste it below.
+# 3. Paste it below. Contact-request tests also need an alumni token:
+#    node ../shared/scripts/make-test-token.js alumni
+# 4. Until Daniel's and Ahmed's /internal routes exist, run the stand-ins in a
+#    second terminal (npm run mock-services) and point IDENTITY_API_URL and
+#    PROFILE_API_URL in .env at ports 4003 and 4001.
 
 @base = http://localhost:3002/api
-@token = PASTE-TOKEN-HERE
+@internal = http://localhost:3002/internal
+@token = PASTE-STUDENT-TOKEN-HERE
+@alumToken = PASTE-ALUMNI-TOKEN-HERE
+@serviceKey = PASTE-SERVICE-KEY-FROM-.env
 
 ### Health check (no login needed) -> 200
 GET {{base}}/health
@@ -29,6 +36,14 @@ Authorization: Bearer {{token}}
 
 ### Filter by graduation year, newest first, page 1 -> 200
 GET {{base}}/alumni?gradYear=2016&sort=newest&page=1
+Authorization: Bearer {{token}}
+
+### Near me: alumni within 50 km of Cairo, closest first -> 200 with distanceKm
+GET {{base}}/alumni?near=Cairo
+Authorization: Bearer {{token}}
+
+### Near me with a radius and other filters -> 200
+GET {{base}}/alumni?near=Alexandria&radiusKm=25&industry=Software
 Authorization: Bearer {{token}}
 
 ### No matches -> 200 with an empty list (not 404)
@@ -61,6 +76,22 @@ Authorization: Bearer {{token}}
 GET {{base}}/alumni?q=a&q=b
 Authorization: Bearer {{token}}
 
+### Place that does not exist -> 400 LOCATION_NOT_FOUND
+GET {{base}}/alumni?near=Qwertyville
+Authorization: Bearer {{token}}
+
+### radiusKm without near -> 400
+GET {{base}}/alumni?radiusKm=10
+Authorization: Bearer {{token}}
+
+### radiusKm too large -> 400
+GET {{base}}/alumni?near=Cairo&radiusKm=9999
+Authorization: Bearer {{token}}
+
+### sort=distance without near -> 400
+GET {{base}}/alumni?sort=distance
+Authorization: Bearer {{token}}
+
 ### Not a valid id -> 404
 GET {{base}}/alumni/123
 Authorization: Bearer {{token}}
@@ -86,3 +117,104 @@ Authorization: Bearer {{token}}
 ### Pick an id from the results above whose owner hid their location, then compare with an admin token.
 GET {{base}}/alumni/PASTE-PROFILE-ID
 Authorization: Bearer {{token}}
+
+### ---------- Contact requests ----------
+
+### Student sends a request -> 201 (copy an alumni id from the search results)
+POST {{base}}/contact-requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "alumniId": "PASTE-PROFILE-ID", "message": "Hello, I am a CS student interested in your field." }
+
+### Same request again while the first is pending -> 409
+POST {{base}}/contact-requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "alumniId": "PASTE-PROFILE-ID", "message": "Hello, I am a CS student interested in your field." }
+
+### Message too short -> 400
+POST {{base}}/contact-requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "alumniId": "PASTE-PROFILE-ID", "message": "hi" }
+
+### Extra field (trying to set status) -> 400
+POST {{base}}/contact-requests
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "alumniId": "PASTE-PROFILE-ID", "message": "Hello, can we talk please?", "status": "accepted" }
+
+### An alum cannot send a request -> 403
+POST {{base}}/contact-requests
+Authorization: Bearer {{alumToken}}
+Content-Type: application/json
+
+{ "alumniId": "PASTE-PROFILE-ID", "message": "Hello, can we talk please?" }
+
+### Student: requests I sent (email shown only once accepted) -> 200
+GET {{base}}/contact-requests
+Authorization: Bearer {{token}}
+
+### Alum: requests I received -> 200
+GET {{base}}/contact-requests
+Authorization: Bearer {{alumToken}}
+
+### A student cannot answer a request -> 403
+PATCH {{base}}/contact-requests/PASTE-REQUEST-ID
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "status": "accepted" }
+
+### Alum answers a request sent to them -> 200
+### (Another alum's token gets 404 for the same id.)
+PATCH {{base}}/contact-requests/PASTE-REQUEST-ID
+Authorization: Bearer {{alumToken}}
+Content-Type: application/json
+
+{ "status": "accepted" }
+
+### Answering twice -> 409
+PATCH {{base}}/contact-requests/PASTE-REQUEST-ID
+Authorization: Bearer {{alumToken}}
+Content-Type: application/json
+
+{ "status": "declined" }
+
+### ---------- Internal (service-to-service) ----------
+
+### No service key -> 401
+POST {{internal}}/locations/resolve
+Content-Type: application/json
+
+{ "location": "Giza" }
+
+### A user's login token is not a service key -> 401
+POST {{internal}}/locations/resolve
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "location": "Giza" }
+
+### Correct key -> 200 (cached: false the first time, true after)
+POST {{internal}}/locations/resolve
+X-Service-Key: {{serviceKey}}
+Content-Type: application/json
+
+{ "location": "Giza" }
+
+### Unknown place -> 404
+POST {{internal}}/locations/resolve
+X-Service-Key: {{serviceKey}}
+Content-Type: application/json
+
+{ "location": "Qwertyville" }
+
+### Failure cases to show at the discussion (no request file needed):
+### - Stop the Identity service  -> every /api route answers 503 SERVICE_UNAVAILABLE.
+### - Stop the Profile service   -> GET /contact-requests still 200, accepted items show contactUnavailable.
+### - Wrong GEOCODING_URL         -> near search on a new place 503 GEOCODING_UNAVAILABLE; other searches still 200.

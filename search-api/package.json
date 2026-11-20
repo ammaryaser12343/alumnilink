@@ -6,7 +6,9 @@
   "private": true,
   "scripts": {
     "dev": "node --watch server.js",
-    "start": "node server.js"
+    "start": "node server.js",
+    "resolve-locations": "node scripts/resolve-locations.js",
+    "mock-services": "node scripts/mock-services.js"
   },
   "engines": {
     "node": ">=18"
