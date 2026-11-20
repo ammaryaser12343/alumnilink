@@ -49,6 +49,8 @@
         </label>
         <label>Sort by
           <select id="sort" name="sort">
+            <!-- Empty value lets the API choose: closest first with Near, otherwise A to Z. -->
+            <option value="">Default</option>
             <option value="name">Name (A to Z)</option>
             <option value="newest">Newest graduates</option>
             <option value="oldest">Oldest graduates</option>
