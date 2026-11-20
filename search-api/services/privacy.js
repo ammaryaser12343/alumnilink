@@ -1,8 +1,8 @@
-// Shared privacy helper. Owner: Ahmed.
+// Privacy helper. Owner: Ammar (Search enforces privacy on every result).
 // Removes every field the profile owner has hidden before a profile leaves the API.
 // The owner and admins still see everything.
 
-const { PRIVACY_FIELDS } = require('./constants');
+const { PRIVACY_FIELDS } = require('../../shared/constants');
 
 // profile: a plain object from the database, including profile.userId
 // hiddenFields: array of field names with is_visible = false, e.g. ['company', 'location']
