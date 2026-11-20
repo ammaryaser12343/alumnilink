@@ -11,6 +11,7 @@
     <h1>AlumniLink</h1>
     <nav aria-label="Main">
       <a href="index.html" aria-current="page">Search</a>
+      <a href="requests.html">Contact requests</a>
       <!-- Ahmed: add links to the login and profile pages here. Daniel: admin link. -->
     </nav>
   </header>
@@ -34,11 +35,24 @@
         <label>Graduation year
           <input type="number" id="gradYear" name="gradYear" min="1950" step="1" placeholder="e.g. 2020">
         </label>
+        <label>Near (city)
+          <input type="text" id="near" name="near" maxlength="100" placeholder="e.g. Alexandria">
+        </label>
+        <label>Within (km)
+          <select id="radiusKm" name="radiusKm">
+            <option value="">50 km</option>
+            <option value="10">10 km</option>
+            <option value="25">25 km</option>
+            <option value="100">100 km</option>
+            <option value="250">250 km</option>
+          </select>
+        </label>
         <label>Sort by
           <select id="sort" name="sort">
             <option value="name">Name (A to Z)</option>
             <option value="newest">Newest graduates</option>
             <option value="oldest">Oldest graduates</option>
+            <option value="distance">Closest first (needs Near)</option>
           </select>
         </label>
         <button type="submit">Search</button>
@@ -46,6 +60,19 @@
 
       <p id="message" class="message" role="status" aria-live="polite"></p>
       <div id="results" class="results"></div>
+
+      <dialog id="contact-dialog" aria-labelledby="contact-heading">
+        <form id="contact-form" method="dialog" novalidate>
+          <h3 id="contact-heading">Ask <span id="contact-name"></span> for their contact details</h3>
+          <label for="contact-message">Message (10 to 500 characters)</label>
+          <textarea id="contact-message" maxlength="500" rows="5" required></textarea>
+          <p id="contact-status" class="message" role="status" aria-live="polite"></p>
+          <div class="dialog-buttons">
+            <button type="button" id="contact-cancel" class="secondary">Cancel</button>
+            <button type="submit" id="contact-send">Send request</button>
+          </div>
+        </form>
+      </dialog>
 
       <nav class="pager" aria-label="Result pages">
         <button type="button" id="prev-page" disabled>Previous</button>

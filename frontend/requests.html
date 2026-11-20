@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AlumniLink | Contact Requests</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <h1>AlumniLink</h1>
+    <nav aria-label="Main">
+      <a href="index.html">Search</a>
+      <a href="requests.html" aria-current="page">Contact requests</a>
+    </nav>
+  </header>
+
+  <main>
+    <section aria-labelledby="requests-heading">
+      <h2 id="requests-heading">Contact requests</h2>
+      <p id="intro"></p>
+      <p id="message" class="message" role="status" aria-live="polite"></p>
+      <ul id="request-list" class="request-list"></ul>
+    </section>
+  </main>
+
+  <script src="js/config.js" defer></script>
+  <script src="js/api.js" defer></script>
+  <script src="js/requests.js" defer></script>
+</body>
+</html>

@@ -7,7 +7,15 @@ const nextButton = document.getElementById('next-page');
 const pageInfo = document.getElementById('page-info');
 const industrySelect = document.getElementById('industry');
 
+const contactDialog = document.getElementById('contact-dialog');
+const contactForm = document.getElementById('contact-form');
+const contactMessage = document.getElementById('contact-message');
+const contactStatus = document.getElementById('contact-status');
+const contactSend = document.getElementById('contact-send');
+const user = currentUser();
+
 let currentPage = 1;
+let contactTarget = null;
 
 INDUSTRIES.forEach((industry) => {
   const option = document.createElement('option');
@@ -19,8 +27,11 @@ document.getElementById('gradYear').max = new Date().getFullYear();
 
 function buildQuery(page) {
   const params = new URLSearchParams();
-  for (const field of ['q', 'location', 'industry', 'gradYear', 'sort']) {
+  const near = document.getElementById('near').value.trim();
+  for (const field of ['q', 'location', 'industry', 'gradYear', 'near', 'radiusKm', 'sort']) {
     const value = document.getElementById(field).value.trim();
+    // Distance options only make sense with a place, so they are not sent without one.
+    if (!near && (field === 'radiusKm' || (field === 'sort' && value === 'distance'))) continue;
     if (value) params.set(field, value);
   }
   params.set('page', page);
@@ -50,11 +61,24 @@ function renderResults(results) {
     addLine(card, 'Company', alumnus.company);
     addLine(card, 'Industry', alumnus.industry);
     addLine(card, 'Location', alumnus.location);
+    if (typeof alumnus.distanceKm === 'number') {
+      addLine(card, 'Distance', `${alumnus.distanceKm} km`);
+    }
     addLine(card, 'Graduated', alumnus.graduationYear);
     if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
       addLine(card, 'Skills', alumnus.skills.join(', '));
     }
     addLine(card, 'About', alumnus.bio);
+
+    // Only students can ask alumni for contact details.
+    if (user && user.role === 'student') {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'contact-button';
+      button.textContent = 'Request contact';
+      button.addEventListener('click', () => openContactDialog(alumnus));
+      card.append(button);
+    }
 
     resultsBox.append(card);
   });
@@ -68,9 +92,10 @@ async function search(page) {
     renderResults(data.results);
 
     const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
+    const place = data.near ? ` within ${data.near.radiusKm} km of ${data.near.name}` : '';
     message.textContent = data.total === 0
-      ? 'No alumni match your search.'
-      : `${data.total} alumni found.`;
+      ? `No alumni match your search${place}.`
+      : `${data.total} alumni found${place}.`;
     pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
     prevButton.disabled = currentPage <= 1;
     nextButton.disabled = currentPage >= totalPages;
@@ -84,6 +109,37 @@ async function search(page) {
       : error.message;
   }
 }
+
+function openContactDialog(alumnus) {
+  contactTarget = alumnus;
+  document.getElementById('contact-name').textContent = alumnus.name;
+  contactMessage.value = '';
+  contactStatus.textContent = '';
+  contactSend.disabled = false;
+  contactDialog.showModal();
+}
+
+contactForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const text = contactMessage.value.trim();
+  if (text.length < 10 || text.length > 500) {
+    contactStatus.textContent = 'Your message must be between 10 and 500 characters.';
+    return;
+  }
+  contactSend.disabled = true;
+  contactStatus.textContent = 'Sending...';
+  try {
+    await apiRequest(`${API.search}/contact-requests`, {
+      method: 'POST',
+      body: JSON.stringify({ alumniId: contactTarget.id, message: text })
+    });
+    contactStatus.textContent = 'Request sent. You will see the answer on the Contact requests page.';
+  } catch (error) {
+    contactStatus.textContent = error.message;
+    contactSend.disabled = false;
+  }
+});
+document.getElementById('contact-cancel').addEventListener('click', () => contactDialog.close());
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();

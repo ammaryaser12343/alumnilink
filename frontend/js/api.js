@@ -22,3 +22,17 @@ async function apiRequest(url, options = {}) {
   }
   return data;
 }
+
+// Reads role and id from the saved token, only to decide what to show on the page.
+// This is not a security check: every API still checks the token and role itself.
+function currentUser() {
+  const token = sessionStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const body = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(body));
+    return { id: payload.sub, role: payload.role };
+  } catch {
+    return null;
+  }
+}
