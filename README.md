@@ -10,9 +10,9 @@ location or industry; privacy settings decide which fields others see.
 |---|---|---|---|
 | `frontend/` | Shared HTML/CSS/JS site (one Vercel project) | Each owner builds their own pages; Ammar deploys | 8080 |
 | `profile-api/` | Profile and Privacy backend, plus sign-up and login | Ahmed Ramadan | 3001 |
-| `search-api/` | Search and Directory backend | Ammar Yaser | 3002 |
+| `search-api/` | Search, near-me locations (Open-Meteo) and contact requests backend; enforces privacy on results | Ammar Yaser | 3002 |
 | `admin-api/` | Administration and Verification backend | Daniel Zerdelian | 3003 |
-| `shared/` | Code every backend includes: error format, login-token and role checks, privacy helper, constants | Ahmed (auth, privacy), Daniel (roles) | – |
+| `shared/` | Code every backend includes: error format, login-token and role checks, constants | Ahmed (auth), Daniel (roles) | – |
 | `docs/` | `schema.sql`, `seed.sql`, `api.md` (the endpoint contract) | Ammar (database) | – |
 
 Each backend follows the Lab 4 layers: `routes/` → `controllers/` (validation, responses) → `services/` (database).
@@ -23,7 +23,9 @@ Each backend follows the Lab 4 layers: `routes/` → `controllers/` (validation,
 2. Open the **SQL Editor**, paste all of `docs/schema.sql` and run it.
 3. Paste all of `docs/seed.sql` and run it. This adds 25 fictional alumni, 3 students and 1 admin.
    Seed accounts cannot log in; they exist for search testing and the demo.
-4. **Connect** → copy the connection string. Share it with the team privately, never in Git.
+4. For near-me search on the seed data, look up the seed cities once (needs internet):
+   `cd search-api && npm run resolve-locations`.
+5. **Connect** → copy the connection string. Share it with the team privately, never in Git.
 
 Running `schema.sql` again deletes every table and its data.
 
@@ -77,7 +79,7 @@ Import the same GitHub repository four times. The only difference is the **Root 
 |---|---|---|
 | Frontend | `frontend` | none |
 | Profile API | `profile-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS`, `TURNSTILE_SECRET_KEY` |
-| Search API | `search-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS` |
+| Search API | `search-api` | `DATABASE_URL`, `TOKEN_SECRET`, `SERVICE_KEY`, `IDENTITY_API_URL`, `PROFILE_API_URL`, `CORS_ORIGINS` |
 | Admin API | `admin-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS` |
 
 - `CORS_ORIGINS` = `http://localhost:8080,https://YOUR-FRONTEND.vercel.app` (no trailing slash).
@@ -95,5 +97,5 @@ Import the same GitHub repository four times. The only difference is the **Root 
 
 - **Ahmed:** register and login (password hashing, Turnstile from Lab 5, `signToken`), profile and privacy routes, login and profile pages.
 - **Daniel:** verification, account status and audit-log routes, admin page, audit logging for admin actions.
-- **Ammar:** search is working on seed data; next is checking that the logged-in user's account is still active, then deployment.
+- **Ammar:** search, near-me (Open-Meteo), contact requests, the account-status check and `/internal/locations/resolve` are built and tested with local stand-ins (`npm run mock-services`). Next: switch to the real Identity and Profile internal routes once they exist, then deploy.
 - **Everyone:** replace the starter token code in `shared/auth.js` with the library approved after the authentication lab, if one is required (keep the same function names).
