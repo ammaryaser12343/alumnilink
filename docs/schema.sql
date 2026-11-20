@@ -2,8 +2,8 @@
 -- Run this once in the Neon SQL Editor, then run seed.sql.
 -- Running it again drops every table first, so all data is lost.
 
-DROP TABLE IF EXISTS audit_logs, verification_requests, privacy_settings,
-  alumni_skills, skills, alumni_profiles, users CASCADE;
+DROP TABLE IF EXISTS contact_requests, locations, audit_logs, verification_requests,
+  privacy_settings, alumni_skills, skills, alumni_profiles, users CASCADE;
 
 -- Every account: alumni, students/staff and admins.
 CREATE TABLE users (
@@ -74,6 +74,38 @@ CREATE TABLE audit_logs (
   outcome        VARCHAR(20) NOT NULL,
   created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+-- Place names resolved to coordinates by the Search service (Open-Meteo Geocoding API).
+-- query_key is the place text in lower case with single spaces, e.g. 'new cairo'.
+-- Each place is looked up once; after that the row is the cache.
+CREATE TABLE locations (
+  id           INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  query_key    VARCHAR(100) NOT NULL UNIQUE,
+  name         VARCHAR(100) NOT NULL,
+  country      VARCHAR(100),
+  latitude     DOUBLE PRECISION NOT NULL CHECK (latitude BETWEEN -90 AND 90),
+  longitude    DOUBLE PRECISION NOT NULL CHECK (longitude BETWEEN -180 AND 180),
+  resolved_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- A student asks an alum for contact details (Search service).
+-- The alum's email is never stored here; it is fetched from the Profile service
+-- only after the alum accepts.
+CREATE TABLE contact_requests (
+  id                 UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  student_user_id    UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  alumni_profile_id  UUID NOT NULL REFERENCES alumni_profiles(id) ON DELETE CASCADE,
+  message            VARCHAR(500) NOT NULL,
+  status             VARCHAR(10) NOT NULL DEFAULT 'pending'
+                     CHECK (status IN ('pending', 'accepted', 'declined')),
+  created_at         TIMESTAMPTZ NOT NULL DEFAULT now(),
+  responded_at       TIMESTAMPTZ
+);
+
+-- A student can have only one open request to the same alum.
+CREATE UNIQUE INDEX uq_contact_requests_pending
+  ON contact_requests (student_user_id, alumni_profile_id) WHERE status = 'pending';
+CREATE INDEX idx_contact_requests_profile ON contact_requests (alumni_profile_id);
 
 -- Indexes for the Search service filters.
 CREATE INDEX idx_profiles_location ON alumni_profiles (lower(location));
