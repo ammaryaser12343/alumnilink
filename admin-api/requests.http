@@ -185,3 +185,26 @@ Authorization: Bearer {{adminToken}}
 ### T26. Diary with a parameter we don't allow  -> 400 VALIDATION_ERROR
 GET {{baseUrl}}/api/admin/logs?sort=newest
 Authorization: Bearer {{adminToken}}
+
+
+############################## INTERNAL (phone line for the other backends) ##############################
+### The service key is read from admin-api/.env, never written here.
+
+### T27. Call the line with NO service key  -> 401 SERVICE_KEY_INVALID
+GET {{baseUrl}}/internal/users/{{studentId}}/status
+
+### T28. Call the line with a WRONG service key  -> 401 SERVICE_KEY_INVALID
+GET {{baseUrl}}/internal/users/{{studentId}}/status
+X-Service-Key: this-is-not-the-real-key-at-all-1234567890
+
+### T29. Correct key, the student  -> 200 { "id", "role": "student", "accountStatus": "active" }
+GET {{baseUrl}}/internal/users/{{studentId}}/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}
+
+### T30. Correct key, an id that doesn't exist  -> 404 USER_NOT_FOUND
+GET {{baseUrl}}/internal/users/11111111-1111-4111-8111-111111111111/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}
+
+### T31. Correct key, nonsense id  -> 404 USER_NOT_FOUND (not a crash)
+GET {{baseUrl}}/internal/users/not-an-id/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}

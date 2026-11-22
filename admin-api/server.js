@@ -1,15 +1,17 @@
-// Administration and Verification API. Owner: Daniel.
+// Identity and Administration API. Owner: Daniel.
 require('dotenv').config();
 
 const express = require('express');
 const cors = require('cors');
 const adminRoutes = require('./routes/admin');
 const authRoutes = require('./routes/auth');
+const internalRoutes = require('./routes/internal');
 const { notFound, errorHandler } = require('../shared/errors');
 
 const app = express();
 const PORT = process.env.PORT || 3003;
 
+// Only the listed frontend origins may read responses (Lab 5).
 const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:8080')
   .split(',')
   .map((origin) => origin.trim());
@@ -21,8 +23,15 @@ app.use(express.json({ limit: '10kb' }));
 
 app.get('/', (req, res) => {
   res.status(200).json({
-    name: 'AlumniLink Administration API',
-    endpoints: ['/api/health', '/api/admin/verifications', '/api/admin/users/:id/status', '/api/admin/logs']
+    name: 'AlumniLink Identity and Administration API',
+    endpoints: [
+      '/api/health',
+      '/api/auth/register',
+      '/api/auth/login',
+      '/api/admin/verifications',
+      '/api/admin/users/:id/status',
+      '/api/admin/logs'
+    ]
   });
 });
 
@@ -32,6 +41,8 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+// Called only by the Search and Profile backends, never by the browser.
+app.use('/internal', internalRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

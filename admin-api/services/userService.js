@@ -35,4 +35,15 @@ async function createUserWithRequest({ name, email, passwordHash, role }) {
   return rows[0];
 }
 
-module.exports = { findUserByEmail, createUserWithRequest };
+// Job 3: role and account status of one user, for the internal status line.
+// Returns { id, role, account_status } or null if no such user.
+async function findUserStatusById(userId) {
+  const sql = getSql();
+  const rows = await sql`
+    SELECT id, role, account_status
+    FROM users
+    WHERE id = ${userId}`;
+  return rows[0] || null;
+}
+
+module.exports = { findUserByEmail, createUserWithRequest, findUserStatusById };
