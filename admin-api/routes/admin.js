@@ -1,11 +1,12 @@
 const express = require('express');
 const adminController = require('../controllers/admin');
-const { requireLogin, requireRole } = require('../../shared/auth');
+const { requireLogin } = require('../../shared/auth');
+const { requireAdmin } = require('../middleware/adminAccess');
 
 const router = express.Router();
 
-// Every admin route: signed in AND role admin. Anyone else gets 401 or 403.
-router.use(requireLogin, requireRole('admin'));
+// Every admin route: a valid badge (401 if not), then an active admin (403 if not).
+router.use(requireLogin, requireAdmin);
 
 router.get('/verifications', adminController.listVerifications);
 router.patch('/verifications/:id', adminController.reviewVerification);
