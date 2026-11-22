@@ -1,101 +1,175 @@
 # AlumniLink
 
-University alumni directory for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
-Alumni manage profiles with skills, graduation year and company; signed-in users search by skill,
-location or industry; privacy settings decide which fields others see.
+A university alumni directory built as three separately deployed Node.js services on one PostgreSQL database.
+Alumni keep a profile with their skills, graduation year, company and location. Signed-in students and alumni
+search the directory by name, skill, industry, graduation year or distance from a city, and each alum's
+privacy settings decide which fields other people can see. Students can ask an alum for contact details;
+the alum's email is shared only if they accept.
 
-## Structure and owners
+Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
 
-| Folder | What it is | Owner | Local port |
-|---|---|---|---|
-| `frontend/` | Shared HTML/CSS/JS site (one Vercel project) | Each owner builds their own pages; Ammar deploys | 8080 |
-| `profile-api/` | Profile and Privacy backend, plus sign-up and login | Ahmed Ramadan | 3001 |
-| `search-api/` | Search, near-me locations (Open-Meteo) and contact requests backend; enforces privacy on results | Ammar Yaser | 3002 |
-| `admin-api/` | Administration and Verification backend | Daniel Zerdelian | 3003 |
-| `shared/` | Code every backend includes: error format, login-token and role checks, constants | Ahmed (auth), Daniel (roles) | – |
-| `docs/` | `schema.sql`, `seed.sql`, `api.md` (the endpoint contract) | Ammar (database) | – |
+## Features
 
-Each backend follows the Lab 4 layers: `routes/` → `controllers/` (validation, responses) → `services/` (database).
+**Search and Directory** (`search-api`, built)
+- Search by name or skill, location, industry and graduation year, with sorting and pagination
+- Near-me search: alumni within a chosen distance of a city, closest first, using the
+  [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api); each place is looked up once and cached
+- Privacy enforced on every result: hidden fields are removed, and filters (including distance) never match a hidden field
+- Contact requests: students send them, only the addressed alum can accept or decline, and the email is fetched
+  from the Profile service only after acceptance
+- Checks with the Identity service on every request that the account is still active (fails closed with 503)
+- Service-to-service calls authenticated with a shared service key, with a 3-second timeout
+- Security events written to an audit log
 
-## 1. Database (once, by the database lead)
+**Profile and Privacy, sign-up and login** (`profile-api`) and **Administration** (`admin-api`)
+- Routes, role checks and endpoint contracts are in place; the handlers are still placeholders that answer
+  `501 Not Implemented`. See [Project status](#project-status).
 
-1. Create a project in Neon (free plan).
-2. Open the **SQL Editor**, paste all of `docs/schema.sql` and run it.
-3. Paste all of `docs/seed.sql` and run it. This adds 25 fictional alumni, 3 students and 1 admin.
-   Seed accounts cannot log in; they exist for search testing and the demo.
-4. For near-me search on the seed data, look up the seed cities once (needs internet):
-   `cd search-api && npm run resolve-locations`.
-5. **Connect** → copy the connection string. Share it with the team privately, never in Git.
+## Architecture
 
-Running `schema.sql` again deletes every table and its data.
+```
+                      Frontend (HTML, CSS, JavaScript)
+                                   |
+             +---------------------+---------------------+
+             |                     |                     |
+        profile-api            search-api            admin-api
+        (port 3001)            (port 3002)           (port 3003)
+             |                     |                     |
+             +----------- Neon PostgreSQL ---------------+
 
-## 2. Run locally
-
-Needs Node.js 18 or later. In each backend folder:
-
-```bash
-cd search-api            # or profile-api / admin-api
-npm install
-cp .env.example .env     # then fill in DATABASE_URL and TOKEN_SECRET
-npm run dev
+             search-api  ->  Open-Meteo Geocoding API
 ```
 
-All three backends must use the **same** `TOKEN_SECRET`. Generate one with:
+- Each backend is its own Vercel project, so users sign in with a signed Bearer token that every backend
+  verifies with the same `TOKEN_SECRET` (cookies do not cross the separate domains).
+- Backends talk to each other only through `/internal` routes protected by `SERVICE_KEY`; the browser never calls them.
+- Each backend follows the same layers: `routes/` → `controllers/` (validation, responses) → `services/` (database and external calls).
+- Errors always use one format: `{ "error": { "code": "...", "message": "..." } }`.
+
+The full endpoint contract, including the internal calls, is in [`docs/api.md`](docs/api.md).
+
+## Technologies
+
+| Area | Used |
+|---|---|
+| Frontend | HTML, CSS, vanilla JavaScript |
+| Backend | Node.js 18+, Express, `cors`, `dotenv` |
+| Database | Neon serverless PostgreSQL (`@neondatabase/serverless`) |
+| External API | Open-Meteo Geocoding (free, no API key) |
+| Hosting | Vercel (four projects from one repository) |
+| Testing | VS Code REST Client or Postman (`search-api/requests.http`) |
+
+## Project structure
+
+```
+alumnilink/
+├── frontend/       Web pages: search with near-me, contact requests
+├── profile-api/    Profile, privacy, sign-up and login backend (placeholder handlers)
+├── search-api/     Search, locations and contact requests backend
+│   ├── controllers/  middleware/  routes/  services/
+│   ├── scripts/      mock-services.js, resolve-locations.js
+│   └── requests.http normal, invalid and security test requests
+├── admin-api/      Administration and verification backend (placeholder handlers)
+├── shared/         Error format, login-token and role checks, constants
+└── docs/           schema.sql, seed.sql, api.md
+```
+
+## Getting started
+
+You need Node.js 18 or later and a free [Neon](https://neon.tech) account.
+
+### 1. Database
+
+1. Create a Neon project and open the **SQL Editor**.
+2. Run all of `docs/schema.sql`, then all of `docs/seed.sql`. The seed adds 25 fictional alumni,
+   3 students and 1 admin for testing; these accounts cannot log in.
+3. Copy the connection string from **Connect**. Keep it private and never commit it.
+
+> Running `schema.sql` again drops every table and deletes all data.
+
+### 2. Search API
+
+```bash
+cd search-api
+npm install
+cp .env.example .env
+```
+
+Fill in `.env` (the comments in `.env.example` explain each value):
+
+| Variable | Value |
+|---|---|
+| `DATABASE_URL` | Neon connection string |
+| `TOKEN_SECRET` | Random secret, the same in all three backends |
+| `SERVICE_KEY` | A different random secret, the same in all three backends |
+| `IDENTITY_API_URL`, `PROFILE_API_URL` | `http://localhost:4003` and `http://localhost:4001` while using the stand-ins below |
+
+Generate each secret with:
 
 ```bash
 node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ```
 
-Frontend, in a second terminal:
+Then run, each in its own terminal from `search-api`:
+
+```bash
+npm run mock-services       # local stand-ins for the Identity and Profile internal endpoints
+npm run resolve-locations   # once: looks up the seed cities so near-me search works
+npm run dev                 # http://localhost:3002/api/health
+```
+
+### 3. Frontend
 
 ```bash
 cd frontend
 npm install
-npm start                # http://localhost:8080
+npm start                   # http://localhost:8080
 ```
 
-Check each backend at `http://localhost:<port>/api/health`.
+## Usage
 
-## 3. Test before the login page exists
-
-Search needs a login token. Until the real login route is built, make a test token from inside a backend folder:
+Until the login page exists, create a test token from inside `search-api`:
 
 ```bash
-cd search-api
 node ../shared/scripts/make-test-token.js student   # or alumni / admin
 ```
 
-- **Postman or REST Client:** paste it into `search-api/requests.http` (normal, invalid and security cases).
-- **Browser:** open the Console on `http://localhost:8080` and run
-  `sessionStorage.setItem('token', 'PASTE-TOKEN')`, then reload.
+- **Browser:** in the Console on `http://localhost:8080`, run `sessionStorage.setItem('token', 'PASTE-TOKEN')` and reload.
+  Search, try a city in **Near**, and as a student use **Request contact**. The **Contact requests** page shows
+  students the requests they sent, and shows alumni the requests they received with Accept and Decline.
+- **API tests:** open `search-api/requests.http` with the VS Code REST Client extension, paste a student token,
+  an alumni token and your `SERVICE_KEY`, and send each request. The comment above each one gives the expected status.
 
-Test tokens only work with your own local `TOKEN_SECRET`. Never use this script in production.
+Test tokens only work with your local `TOKEN_SECRET`. Never use the token script in production.
 
-## 4. Deploy to Vercel (four projects, one repository)
+## Deployment
 
-Import the same GitHub repository four times. The only difference is the **Root Directory**:
+Import the repository into Vercel once per service, changing only the **Root Directory**:
 
 | Vercel project | Root Directory | Environment variables |
 |---|---|---|
 | Frontend | `frontend` | none |
-| Profile API | `profile-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS`, `TURNSTILE_SECRET_KEY` |
 | Search API | `search-api` | `DATABASE_URL`, `TOKEN_SECRET`, `SERVICE_KEY`, `IDENTITY_API_URL`, `PROFILE_API_URL`, `CORS_ORIGINS` |
+| Profile API | `profile-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS`, `TURNSTILE_SECRET_KEY` |
 | Admin API | `admin-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS` |
 
-- `CORS_ORIGINS` = `http://localhost:8080,https://YOUR-FRONTEND.vercel.app` (no trailing slash).
-- In each API project, keep **Settings → Build and Deployment → "Include files outside the root directory in the Build Step"** enabled, so `../shared` is deployed with the backend.
-- After deploying the APIs, put their domains in `frontend/js/config.js` and `frontend/vercel.json`, then push again.
-- Test `https://<api-domain>/api/health` first. If health works but `/api/alumni` fails, check `DATABASE_URL` in Vercel and redeploy.
+- `CORS_ORIGINS` is a comma-separated list such as `http://localhost:8080,https://your-frontend.vercel.app`.
+- Keep **Include files outside the root directory in the Build Step** enabled so `shared/` is deployed with each backend.
+- After the APIs are deployed, put their domains in `frontend/js/config.js` and `frontend/vercel.json`.
 
-## 5. Git workflow
+## Project status
 
-- Never push to `main` directly. Work on your branch (`feature/profile`, `feature/search`, `feature/admin`) and open a pull request; another member reviews before merging.
-- Commit from your own GitHub account. Commits are the evidence of who built each service.
-- `.env` is in `.gitignore`. If a secret is ever committed, change it in Neon/Vercel straight away.
+| Service | Owner | Status |
+|---|---|---|
+| Search, locations and contact requests | Ammar Yaser | Built; tested against Neon, Open-Meteo and the local stand-ins |
+| Profile, privacy, sign-up and login | Ahmed Ramadan | Routes in place; handlers to be built |
+| Administration and verification | Daniel Zerdelian | Routes in place; handlers to be built |
 
-## What is still to build
+Until the Identity and Profile services provide their `/internal` endpoints, `search-api/scripts/mock-services.js`
+stands in for them locally with the same request and response formats.
 
-- **Ahmed:** register and login (password hashing, Turnstile from Lab 5, `signToken`), profile and privacy routes, login and profile pages.
-- **Daniel:** verification, account status and audit-log routes, admin page, audit logging for admin actions.
-- **Ammar:** search, near-me (Open-Meteo), contact requests, the account-status check and `/internal/locations/resolve` are built and tested with local stand-ins (`npm run mock-services`). Next: switch to the real Identity and Profile internal routes once they exist, then deploy.
-- **Everyone:** replace the starter token code in `shared/auth.js` with the library approved after the authentication lab, if one is required (keep the same function names).
+## Contributing
+
+- Work on your own branch (`feature/profile`, `feature/search`, `feature/admin`) and open a pull request;
+  another member reviews it before it is merged into `main`.
+- Never commit `.env` files. If a secret is ever committed, change it in Neon and Vercel straight away.
