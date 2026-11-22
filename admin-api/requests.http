@@ -1,0 +1,64 @@
+### Tests for the Identity and Administration API (Daniel)
+### Click "Send Request" above each test. The comment says what should come back.
+
+@baseUrl = http://localhost:3003
+# Cloudflare's test ticket. With the test secret key it always passes.
+@ticket = XXXX.DUMMY.TOKEN.XXXX
+
+### T1. Health check  -> 200 "status": "ok"
+GET {{baseUrl}}/api/health
+
+### T2. Sign up WITHOUT a Turnstile ticket  -> 403 BOT_CHECK_FAILED
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "name": "Test Student", "email": "daniel.test.student@example.com", "password": "Student123", "role": "student" }
+
+### T3. Sign up a student (correct)  -> 201, accountStatus "pending"
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Test Student", "email": "daniel.test.student@example.com", "password": "Student123", "role": "student" }
+
+### T4. Same email again  -> 409 EMAIL_ALREADY_REGISTERED
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Copy Cat", "email": "daniel.test.student@example.com", "password": "Student123", "role": "student" }
+
+### T5. Try to sign up as admin  -> 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Sneaky", "email": "daniel.test.sneaky@example.com", "password": "Sneaky123", "role": "admin" }
+
+### T6. Weak password  -> 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Weak", "email": "daniel.test.weak@example.com", "password": "123", "role": "student" }
+
+### T7. Log in while still pending  -> 403 ACCOUNT_PENDING
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Student123" }
+
+### T8. Log in with the WRONG password  -> 401 "Email or password is incorrect."
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Wrong12345" }
+
+### T9. Log in with an email that doesn't exist  -> 401, SAME message as T8
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "nobody@example.com", "password": "Whatever123" }

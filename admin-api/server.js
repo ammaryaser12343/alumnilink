@@ -4,6 +4,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const adminRoutes = require('./routes/admin');
+const authRoutes = require('./routes/auth');
 const { notFound, errorHandler } = require('../shared/errors');
 
 const app = express();
@@ -14,7 +15,8 @@ const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:8080')
   .map((origin) => origin.trim());
 
 app.disable('x-powered-by');
-app.use(cors({ origin: allowedOrigins }));
+// X-Turnstile-Token must be allowed so the sign-up and login pages can send the ticket.
+app.use(cors({ origin: allowedOrigins, allowedHeaders: ['Content-Type', 'Authorization', 'X-Turnstile-Token'] }));
 app.use(express.json({ limit: '10kb' }));
 
 app.get('/', (req, res) => {
@@ -28,6 +30,7 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', service: 'admin', environment: process.env.NODE_ENV || 'development' });
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use(notFound);
