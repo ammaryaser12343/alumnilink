@@ -148,4 +148,40 @@ form.addEventListener('submit', (event) => {
 prevButton.addEventListener('click', () => search(currentPage - 1));
 nextButton.addEventListener('click', () => search(currentPage + 1));
 
+// Fills a <datalist> so the browser suggests values while typing.
+function fillSuggestions(input, listId, items) {
+  let list = document.getElementById(listId);
+  if (!list) {
+    list = document.createElement('datalist');
+    list.id = listId;
+    document.body.append(list);
+    input.setAttribute('list', listId);
+  }
+  list.replaceChildren(...items.map((item) => {
+    const option = document.createElement('option');
+    option.value = item.name;
+    return option;
+  }));
+}
+
+// GET /api/alumni/filters: industry counts, year range, common skills and places.
+// The page still works with the plain lists above if this call fails.
+async function loadFilterOptions() {
+  try {
+    const options = await apiRequest(`${API.search}/alumni/filters`);
+    for (const option of industrySelect.options) {
+      const match = options.industries.find((item) => item.name === option.value);
+      if (match) option.textContent = `${match.name} (${match.count})`;
+    }
+    const year = document.getElementById('gradYear');
+    if (options.graduationYears.min) year.min = options.graduationYears.min;
+    if (options.graduationYears.max) year.max = options.graduationYears.max;
+    fillSuggestions(document.getElementById('q'), 'skill-suggestions', options.skills);
+    fillSuggestions(document.getElementById('location'), 'location-suggestions', options.locations);
+  } catch (error) {
+    // Not signed in or service down: the search itself shows the message.
+  }
+}
+
+loadFilterOptions();
 search(1);
