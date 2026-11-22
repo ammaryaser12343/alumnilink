@@ -21,9 +21,13 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
 - Service-to-service calls authenticated with a shared service key, with a 3-second timeout
 - Security events written to an audit log
 
-**Profile and Privacy, sign-up and login** (`profile-api`) and **Administration** (`admin-api`)
-- Routes, role checks and endpoint contracts are in place; the handlers are still placeholders that answer
-  `501 Not Implemented`. See [Project status](#project-status).
+**Profile and Privacy** (`profile-api`, built and tested independently)
+- Alumni profile, skills, privacy, activation and consent-checked contact access.
+- Floci deployment and temporary test-session setup are documented in [infra/floci/README.md](infra/floci/README.md).
+- Joint testing requires agreement on Daniel’s signed tokens and the Search/Profile internal request contracts. The Search setup below uses the existing stand-ins.
+
+**Identity and Administration** (`admin-api`)
+- Team integration is pending.
 
 ## Architecture
 
@@ -40,9 +44,8 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
              search-api  ->  Open-Meteo Geocoding API
 ```
 
-- Each backend is its own Vercel project, so users sign in with a signed Bearer token that every backend
-  verifies with the same `TOKEN_SECRET` (cookies do not cross the separate domains).
-- Backends talk to each other only through `/internal` routes protected by `SERVICE_KEY`; the browser never calls them.
+- The Search demo verifies signed Bearer tokens using `TOKEN_SECRET` and uses `SERVICE_KEY` for internal calls to its stand-ins.
+- Profile verifies RS256 tokens with Daniel’s public key and requires a separate Search credential plus the Student token and request ID for contact disclosure. Align the contracts before testing all three services together.
 - Each backend follows the same layers: `routes/` → `controllers/` (validation, responses) → `services/` (database and external calls).
 - Errors always use one format: `{ "error": { "code": "...", "message": "..." } }`.
 
@@ -56,7 +59,7 @@ The full endpoint contract, including the internal calls, is in [`docs/api.md`](
 | Backend | Node.js 18+, Express, `cors`, `dotenv` |
 | Database | Neon serverless PostgreSQL (`@neondatabase/serverless`) |
 | External API | Open-Meteo Geocoding (free, no API key) |
-| Hosting | Vercel (four projects from one repository) |
+| Hosting | Floci for Profile and Privacy; Vercel setup for the Search demo |
 | Testing | VS Code REST Client or Postman (`search-api/requests.http`) |
 
 ## Project structure
@@ -64,7 +67,7 @@ The full endpoint contract, including the internal calls, is in [`docs/api.md`](
 ```
 alumnilink/
 ├── frontend/       Web pages: search with near-me, contact requests
-├── profile-api/    Profile, privacy, sign-up and login backend (placeholder handlers)
+├── profile-api/    Profile, skills, privacy and contact disclosure backend
 ├── search-api/     Search, locations and contact requests backend
 │   ├── controllers/  middleware/  routes/  services/
 │   ├── scripts/      mock-services.js, resolve-locations.js
@@ -144,13 +147,12 @@ Test tokens only work with your local `TOKEN_SECRET`. Never use the token script
 
 ## Deployment
 
-Import the repository into Vercel once per service, changing only the **Root Directory**:
+See [Floci setup](infra/floci/README.md) for Profile and Privacy. For the standalone Search demo, the previous Vercel settings are listed below for the frontend, Search and Admin.
 
 | Vercel project | Root Directory | Environment variables |
 |---|---|---|
 | Frontend | `frontend` | none |
 | Search API | `search-api` | `DATABASE_URL`, `TOKEN_SECRET`, `SERVICE_KEY`, `IDENTITY_API_URL`, `PROFILE_API_URL`, `CORS_ORIGINS` |
-| Profile API | `profile-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS`, `TURNSTILE_SECRET_KEY` |
 | Admin API | `admin-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS` |
 
 - `CORS_ORIGINS` is a comma-separated list such as `http://localhost:8080,https://your-frontend.vercel.app`.
@@ -162,11 +164,10 @@ Import the repository into Vercel once per service, changing only the **Root Dir
 | Service | Owner | Status |
 |---|---|---|
 | Search, locations and contact requests | Ammar Yaser | Built; tested against Neon, Open-Meteo and the local stand-ins |
-| Profile, privacy, sign-up and login | Ahmed Ramadan | Routes in place; handlers to be built |
-| Administration and verification | Daniel Zerdelian | Routes in place; handlers to be built |
+| Profile and Privacy | Ahmed Ramadan | Built and tested independently on Floci |
+| Identity and Administration | Daniel Zerdelian | Repository contains placeholders; integration pending |
 
-Until the Identity and Profile services provide their `/internal` endpoints, `search-api/scripts/mock-services.js`
-stands in for them locally with the same request and response formats.
+The standalone Search demo uses `search-api/scripts/mock-services.js`. Profile and Search were also tested against an isolated copy of the team database to verify directory privacy and deactivation. Full HTTP integration still needs agreement on tokens, account status, location resolution and contact request context.
 
 ## Contributing
 

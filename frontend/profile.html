@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Your professional profile | AlumniLink</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <script defer src="js/config.js"></script>
+    <script defer src="js/profile-config.js"></script>
+    <script defer src="js/profile-client.js"></script>
+    <script defer src="js/profile.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>AlumniLink</h1>
+      <nav aria-label="Main">
+        <a href="index.html">Search</a>
+        <a href="requests.html">Contact requests</a>
+        <a href="profile.html" aria-current="page">My profile</a>
+        <a href="privacy.html">Privacy</a>
+        <button id="logout" type="button">Sign out</button>
+      </nav>
+    </header>
+    <main class="profile-main">
+      <h2>Your professional profile</h2>
+      <p id="status" role="status" aria-live="polite"></p>
+      <form class="profile-form" id="profile" hidden>
+        <label
+          >Graduation year<input
+            name="graduationYear"
+            type="number"
+            min="1950"
+            required
+        /></label>
+        <label>Company<input name="company" maxlength="100" /></label>
+        <label>Industry<input name="industry" maxlength="50" /></label>
+        <label
+          >Location<input
+            name="location"
+            maxlength="100"
+            placeholder="City, country"
+        /></label>
+        <p class="help">
+          Your city is resolved by the Locations service. Leave it empty to
+          clear your saved city.
+        </p>
+        <label
+          >Contact email<input name="contactEmail" type="email" maxlength="254"
+        /></label>
+        <p class="help">
+          Shared with a Student after you accept their contact request.
+        </p>
+        <label
+          >Bio<textarea name="bio" maxlength="500" rows="4"></textarea>
+        </label>
+        <label
+          >Skills separated by commas<input name="skills" maxlength="1000"
+        /></label>
+        <div class="actions">
+          <button type="submit">Save profile</button>
+          <button id="toggle-profile" type="button" class="secondary" hidden>
+            Deactivate profile
+          </button>
+        </div>
+        <p id="active-state" class="help"></p>
+      </form>
+    </main>
+  </body>
+</html>

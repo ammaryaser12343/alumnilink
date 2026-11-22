@@ -18,3 +18,10 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Local deployment artifacts and private keys
+.vercel-preview/
+*.pem
+*.key
+*.zip
+coverage/
