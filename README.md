@@ -24,7 +24,7 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
 **Profile and Privacy** (`profile-api`, built and tested independently)
 - Alumni profile, skills, privacy, activation and consent-checked contact access.
 - Floci deployment and temporary test-session setup are documented in [infra/floci/README.md](infra/floci/README.md).
-- Joint testing requires agreement on Daniel’s signed tokens and the Search/Profile internal request contracts. The Search setup below uses the existing stand-ins.
+- Profile uses Daniel’s signed tokens, live account status and Ammar’s Locations API. Search forwards the Student token and accepted request ID for contact disclosure.
 
 **Identity and Administration** (`admin-api`)
 - Team integration is pending.
@@ -44,8 +44,8 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
              search-api  ->  Open-Meteo Geocoding API
 ```
 
-- The Search demo verifies signed Bearer tokens using `TOKEN_SECRET` and uses `SERVICE_KEY` for internal calls to its stand-ins.
-- Profile verifies RS256 tokens with Daniel’s public key and requires a separate Search credential plus the Student token and request ID for contact disclosure. Align the contracts before testing all three services together.
+- All backends verify user tokens with the team’s TOKEN_SECRET. Internal calls send X-Service-Key with the shared SERVICE_KEY.
+- Profile verifies the original Student token and exact accepted request before releasing contact email.
 - Each backend follows the same layers: `routes/` → `controllers/` (validation, responses) → `services/` (database and external calls).
 - Errors always use one format: `{ "error": { "code": "...", "message": "..." } }`.
 
@@ -167,7 +167,7 @@ See [Floci setup](infra/floci/README.md) for Profile and Privacy. For the standa
 | Profile and Privacy | Ahmed Ramadan | Built and tested independently on Floci |
 | Identity and Administration | Daniel Zerdelian | Repository contains placeholders; integration pending |
 
-The standalone Search demo uses `search-api/scripts/mock-services.js`. Profile and Search were also tested against an isolated copy of the team database to verify directory privacy and deactivation. Full HTTP integration still needs agreement on tokens, account status, location resolution and contact request context.
+The standalone Search demo uses `search-api/scripts/mock-services.js`. Profile and Search were also tested against an isolated copy of the team database to verify directory privacy and deactivation. See [docs/api.md](docs/api.md) for the shared HTTP contracts.
 
 ## Contributing
 

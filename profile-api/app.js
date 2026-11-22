@@ -1,8 +1,7 @@
 const { randomUUID } = require("node:crypto");
 const cors = require("cors");
 const express = require("express");
-const jwt = require("jsonwebtoken");
-const { createVerifier, bearer, requireService } = require("./profile-auth");
+const { verifyUser, bearer, requireService } = require("./profile-auth");
 const { ApiError } = require("./errors");
 const validate = require("./validation");
 
@@ -19,7 +18,6 @@ function createApp({
   logger = console,
 }) {
   const app = express();
-  const verify = createVerifier({ ...config, jwt });
   app.disable("x-powered-by");
   app.use((req, res, next) => {
     req.requestId = /^[a-f\d]{8}(?:-[a-f\d]{4}){3}-[a-f\d]{12}$/i.test(
@@ -67,11 +65,11 @@ function createApp({
       { requestId },
     );
     if (
-      !account?.user ||
-      account.user.id !== claims.sub ||
-      account.user.role !== claims.role ||
-      account.user.role !== role ||
-      account.user.accountStatus !== "active"
+      !account ||
+      account.id !== claims.sub ||
+      account.role !== claims.role ||
+      account.role !== role ||
+      account.accountStatus !== "active"
     ) {
       throw new ApiError(
         403,
@@ -81,7 +79,7 @@ function createApp({
     }
   }
   async function alumni(req, _res, next) {
-    const claims = verify(bearer(req));
+    const claims = verifyUser(bearer(req));
     if (claims.role !== "alumni")
       throw new ApiError(
         403,
@@ -94,36 +92,25 @@ function createApp({
   }
   async function resolvedDetails(req, create = false) {
     const details = validate.profile(req.body, create);
-    if (Object.hasOwn(details, "location")) {
-      if (details.location === null) details.locationId = null;
-      else {
-        const result = await locations("/internal/locations/resolve", {
-          body: { name: details.location },
-          requestId: req.requestId,
-        });
-        if (
-          !Number.isSafeInteger(result?.location?.id) ||
-          result.location.id <= 0
-        ) {
-          throw new ApiError(
-            503,
-            "INVALID_LOCATION_RESPONSE",
-            "Locations returned an invalid result.",
-          );
-        }
-        const saved = await store.locationExists(result.location.id);
-        if (!saved)
-          throw new ApiError(
-            503,
-            "LOCATION_NOT_SAVED",
-            "The resolved location is unavailable. Retry the request.",
-          );
-        details.locationId = saved.id;
-        details.location = [saved.name, saved.country]
-          .filter(Boolean)
-          .join(", ")
-          .slice(0, 100);
+    if (Object.hasOwn(details, "location") && details.location !== null) {
+      const result = await locations("/internal/locations/resolve", {
+        body: { location: details.location },
+        requestId: req.requestId,
+      });
+      if (!result) {
+        throw new ApiError(400, "INVALID_LOCATION", "The selected location could not be resolved.");
       }
+      const place = result.location;
+      if (
+        typeof place?.name !== "string" ||
+        !place.name.trim() ||
+        (place.country !== null && typeof place.country !== "string") ||
+        !Number.isFinite(place.latitude) ||
+        !Number.isFinite(place.longitude)
+      ) {
+        throw new ApiError(503, "INVALID_LOCATION_RESPONSE", "Locations returned an invalid result.");
+      }
+      // Search caches the coordinates under the submitted text, including aliases.
     }
     return details;
   }
@@ -176,9 +163,9 @@ function createApp({
   });
   app.get(
     "/internal/profiles/:id/contact",
-    requireService(config.searchServiceToken),
+    requireService(config.serviceKey),
     async (req, res) => {
-      const claims = verify(req.get("X-User-Token"));
+      const claims = verifyUser(req.get("X-User-Token"));
       if (claims.role !== "student")
         throw new ApiError(
           403,
@@ -204,9 +191,9 @@ function createApp({
         { requestId: req.requestId },
       );
       if (
-        owner?.user?.id !== context.ownerId ||
-        owner.user.role !== "alumni" ||
-        owner.user.accountStatus !== "active"
+        owner?.id !== context.ownerId ||
+        owner.role !== "alumni" ||
+        owner.accountStatus !== "active"
       ) {
         throw new ApiError(
           403,
@@ -225,7 +212,7 @@ function createApp({
           "CONTACT_DENIED",
           "Contact details are unavailable.",
         );
-      res.json({ contactEmail: contact.contactEmail });
+      res.json({ profileId, contactEmail: contact.contactEmail });
     },
   );
   app.use((_req, _res, next) =>

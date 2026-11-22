@@ -52,20 +52,17 @@ function createRuntimeApp(env = process.env) {
   return createApp({
     store: createStore(db),
     identity: createServiceClient({
-      baseUrl: env.ADMIN_API_URL,
-      token: env.PROFILE_TO_ADMIN_TOKEN,
+      baseUrl: env.IDENTITY_API_URL,
+      serviceKey: env.SERVICE_KEY,
       service: "Identity",
     }),
     locations: createServiceClient({
       baseUrl: env.SEARCH_API_URL,
-      token: env.PROFILE_TO_SEARCH_TOKEN,
+      serviceKey: env.SERVICE_KEY,
       service: "Locations",
     }),
     config: {
-      publicKey: env.JWT_PUBLIC_KEY,
-      issuer: env.JWT_ISSUER,
-      audience: env.JWT_AUDIENCE,
-      searchServiceToken: env.SEARCH_TO_PROFILE_TOKEN,
+      serviceKey: env.SERVICE_KEY,
       frontendOrigin: env.FRONTEND_ORIGIN,
     },
   });

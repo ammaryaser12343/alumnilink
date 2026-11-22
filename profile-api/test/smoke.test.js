@@ -1,11 +1,11 @@
 const assert = require("node:assert/strict");
 const { test } = require("node:test");
-const { generateKeyPairSync, randomUUID, randomBytes } = require("node:crypto");
+const { randomUUID, randomBytes } = require("node:crypto");
 const { readFile } = require("node:fs/promises");
 const path = require("node:path");
 const { once } = require("node:events");
 const express = require("express");
-const jwt = require("jsonwebtoken");
+const { signToken } = require("../../shared/auth");
 const { PGlite } = require("@electric-sql/pglite");
 const { createApp } = require("../app");
 const { createStore } = require("../store");
@@ -47,13 +47,14 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     );
   }
   const secret = randomBytes(32).toString("hex");
+  process.env.TOKEN_SECRET = randomBytes(32).toString("hex");
   const requestIds = [];
   let locationMode = "ok";
   let identityMode = "ok";
   const teammate = express();
   teammate.use(express.json());
   teammate.use((req, res, next) => {
-    if (req.get("Authorization") !== "Bearer " + secret)
+    if (req.get("X-Service-Key") !== secret)
       return res.sendStatus(401);
     requestIds.push(req.get("X-Request-Id"));
     next();
@@ -64,35 +65,25 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
       'SELECT id,role,account_status AS "accountStatus" FROM users WHERE id=$1',
       [req.params.id],
     );
-    return rows[0] ? res.json({ user: rows[0] }) : res.sendStatus(404);
+    return rows[0] ? res.json(rows[0]) : res.sendStatus(404);
   });
   teammate.post("/internal/locations/resolve", async (req, res) => {
     if (locationMode === "fail") return res.sendStatus(500);
     if (locationMode === "timeout") return;
     if (locationMode === "malformed")
       return res.json({ location: { id: "bad" } });
-    if (req.body.name !== "Cairo") return res.sendStatus(400);
+    if (req.body.location !== "Cairo") return res.sendStatus(400);
     const { rows } =
       await db.query(`INSERT INTO locations(query_key,name,country,latitude,longitude)
    VALUES('cairo','Cairo','Egypt',30,31) ON CONFLICT(query_key) DO UPDATE SET name=excluded.name RETURNING id`);
-    res.json({ location: rows[0] });
+    assert.ok(rows[0].id);
+    res.json({ location: { name: "Cairo", country: "Egypt", latitude: 30, longitude: 31 }, cached: true });
   });
   const base = await serve(teammate, t);
-  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
-    modulusLength: 2048,
+  const token = (name) => signToken({
+    sub: userIds[name],
+    role: ["student", "stranger"].includes(name) ? "student" : "alumni",
   });
-  const token = (name) =>
-    jwt.sign(
-      { role: ["student", "stranger"].includes(name) ? "student" : "alumni" },
-      privateKey,
-      {
-        algorithm: "RS256",
-        subject: userIds[name],
-        expiresIn: "15m",
-        issuer: "alumnilink-accounts",
-        audience: "alumnilink-api",
-      },
-    );
   const tokens = Object.fromEntries(
     Object.keys(userIds).map((name) => [name, token(name)]),
   );
@@ -101,19 +92,18 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     store: createStore(db),
     identity: createServiceClient({
       baseUrl: base,
-      token: secret,
+      serviceKey: secret,
       service: "Identity",
       timeoutMs: 100,
     }),
     locations: createServiceClient({
       baseUrl: base,
-      token: secret,
+      serviceKey: secret,
       service: "Locations",
       timeoutMs: 100,
     }),
     config: {
-      publicKey: publicKey.export({ format: "pem", type: "spki" }),
-      searchServiceToken: secret,
+      serviceKey: secret,
     },
     logger: {
       info: (line) => logs.push(line),
@@ -153,7 +143,7 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
       null,
       null,
       {
-        Authorization: "Bearer " + credential,
+        "X-Service-Key": credential,
         "X-User-Token": tokens[sender],
       },
     );
@@ -186,7 +176,7 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
       assert.equal(result.status, 201);
       profileId = result.body.profile.id;
       assert.deepEqual(result.body.profile.skills, ["node.js", "sql"]);
-      assert.equal(result.body.profile.location, "Cairo, Egypt");
+      assert.equal(result.body.profile.location, "Cairo");
       assert.equal(
         (await api("/api/profiles", "POST", { graduationYear: 2020 })).status,
         409,
@@ -313,8 +303,8 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
       );
       assert.equal(
         (await api("/api/profiles/me", "PATCH", { location: null })).body
-          .profile.locationId,
-        null,
+          .profile.location,
+        "",
       );
     },
   );
@@ -330,7 +320,11 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
         "UPDATE contact_requests SET status='accepted' WHERE id=$1",
         [incoming],
       );
-      assert.equal((await contact()).body.contactEmail, "alumni@example.test");
+      assert.deepEqual((await contact()).body, { profileId, contactEmail: "alumni@example.test" });
+      assert.equal(
+        (await api("/internal/profiles/" + profileId + "/contact", "GET", null, null, { "X-Service-Key": secret })).status,
+        401,
+      );
       assert.equal((await contact("stranger")).status, 403);
       assert.equal((await contact("student", randomUUID())).status, 403);
       assert.equal(

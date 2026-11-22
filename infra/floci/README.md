@@ -16,7 +16,7 @@ The runtime uses API Gateway, Lambda, CloudWatch Logs, an IAM log-writing role a
 - http://localhost:4566/alumnilink-accounts-web/privacy.html
 - http://localhost:4566/_floci/ui
 
-The log group remains /aws/lambda/alumnilink-accounts. Authentication requires Daniel's JWT_PUBLIC_KEY, issuer/audience and status endpoint. The location client requires Ammar's endpoint. A regular deployment leaves protected operations unavailable until these values are supplied.
+The log group remains /aws/lambda/alumnilink-accounts. Set the team’s TOKEN_SECRET and SERVICE_KEY along with IDENTITY_API_URL and SEARCH_API_URL for the real services. A regular deployment leaves protected operations unavailable until these values are supplied.
 
 For a fresh local Docker environment, create an ignored .env.floci with a random POSTGRES_PASSWORD, using Node's crypto.randomBytes(32).toString('hex'). This password initializes the retained local PostgreSQL service. Configure the separate hosted database in profile-api/.env.
 
@@ -28,7 +28,7 @@ To run deployed integration checks:
 
 The check temporarily configures explicit HTTP doubles for the teammate services. It uses synthetic Neon records, verifies the deployed Profile API, checks CloudWatch, and restores the original runtime configuration. It requires the migration owner connection in profile-api/.env for test setup and cleanup. The JSON evidence identifies the use of doubles.
 
-For the real integrated demonstration, Daniel's login page stores the signed token in sessionStorage under alumnilink.accessToken on the same website origin. Profile and Privacy send it in Authorization. Ammar must enforce saved visibility choices in search results and search filters. The three services still require joint testing with the actual teammate code.
+For the real integrated demonstration, Daniel's login page stores the signed token in sessionStorage under token on the same website origin. Profile and Privacy send it in Authorization. Ammar must enforce saved visibility choices in search results and search filters. The three services still require joint testing with the actual teammate code.
 
 Stop the stack while keeping its volumes with:
 

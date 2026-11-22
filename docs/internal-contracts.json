@@ -1,25 +1,23 @@
 {
-  "status": "Proposed wire contracts awaiting Ammar and Daniel review. Database column names verified against Neon on 2026-11-22.",
+  "status": "Matches the team service contract and documents the accepted-contact context sent by Search.",
   "userToken": {
-    "algorithm": "RS256",
+    "format": "shared/auth.js signToken and verifyToken using TOKEN_SECRET",
     "subject": "users.id UUID",
     "role": [
       "student",
       "alumni",
       "admin"
     ],
-    "expiry": "required numeric exp",
-    "issuer": "configurable JWT_ISSUER, defaults to alumnilink-accounts",
-    "audience": "configurable JWT_AUDIENCE, defaults to alumnilink-api",
-    "profileReceives": "public verification key only"
+    "expiry": "required numeric exp"
   },
   "browser": {
-    "sessionStorageKey": "alumnilink.accessToken",
+    "sessionStorageKey": "token",
     "pages": [
       "profile.html",
       "privacy.html"
     ],
-    "identityOwner": "Daniel"
+    "identityOwner": "Daniel",
+    "localDemoSessionStorageKey": "alumnilink.accessToken"
   },
   "calls": [
     {
@@ -27,13 +25,13 @@
       "receiver": "Identity",
       "method": "GET",
       "path": "/internal/users/:id/status",
-      "authorization": "Bearer PROFILE_TO_ADMIN_TOKEN",
       "response": {
-        "user": {
-          "id": "UUID matching requested user",
-          "role": "alumni | student | admin",
-          "accountStatus": "active | suspended | pending | rejected"
-        }
+        "id": "UUID matching requested user",
+        "role": "alumni | student | admin",
+        "accountStatus": "active | suspended | pending | rejected"
+      },
+      "headers": {
+        "X-Service-Key": "SERVICE_KEY"
       }
     },
     {
@@ -41,29 +39,37 @@
       "receiver": "Locations",
       "method": "POST",
       "path": "/internal/locations/resolve",
-      "authorization": "Bearer PROFILE_TO_SEARCH_TOKEN",
       "request": {
-        "name": "City, country"
+        "location": "Cairo"
       },
       "response": {
         "location": {
-          "id": "positive integer already committed to the shared locations table"
-        }
+          "name": "Cairo",
+          "country": "Egypt",
+          "latitude": 30,
+          "longitude": 31
+        },
+        "cached": true
       },
-      "failure": "400 unresolved input, 503 outage or malformed result. Profile changes remain uncommitted."
+      "failure": "400 unresolved input, 503 outage or malformed result. Profile changes remain uncommitted.",
+      "headers": {
+        "X-Service-Key": "SERVICE_KEY"
+      },
+      "storage": "Save the submitted location text that Search uses for its cache key."
     },
     {
       "caller": "Search",
       "receiver": "Profile",
       "method": "GET",
       "path": "/internal/profiles/:id/contact?requestId=:requestId",
-      "authorization": "Bearer SEARCH_TO_PROFILE_TOKEN",
       "headers": {
+        "X-Service-Key": "SERVICE_KEY",
         "X-User-Token": "Student's original signed user token, verified independently",
         "X-Request-Id": "Optional UUID propagated into logs"
       },
       "response": {
-        "contactEmail": "string"
+        "profileId": "profile UUID",
+        "contactEmail": "string or null"
       },
       "checks": [
         "valid service credential",

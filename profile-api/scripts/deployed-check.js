@@ -1,8 +1,8 @@
 const assert = require("node:assert/strict");
 const { Pool } = require("pg");
 const express = require("express");
-const jwt = require("jsonwebtoken");
-const { generateKeyPairSync, randomUUID, randomBytes } = require("node:crypto");
+const { signToken } = require("../../shared/auth");
+const { randomUUID, randomBytes } = require("node:crypto");
 const { spawnSync } = require("node:child_process");
 const { once } = require("node:events");
 const { writeFile, mkdir, access, unlink, open } = require("node:fs/promises");
@@ -66,34 +66,19 @@ async function main() {
     stranger: randomUUID(),
   };
   const secrets = randomBytes(32).toString("hex");
-  const { privateKey, publicKey } = generateKeyPairSync("rsa", {
-    modulusLength: 2048,
-  });
-  const tokens = Object.fromEntries(
-    Object.entries(ids).map(([name, id]) => [
-      name,
-      jwt.sign(
-        {
-          role: ["student", "stranger"].includes(name) ? "student" : "alumni",
-        },
-        privateKey,
-        {
-          algorithm: "RS256",
-          subject: id,
-          issuer: "alumnilink-accounts",
-          audience: "alumnilink-api",
-          expiresIn: "15m",
-        },
-      ),
-    ]),
-  );
+  const tokenSecret = randomBytes(32).toString("hex");
+  process.env.TOKEN_SECRET = tokenSecret;
+  const tokens = Object.fromEntries(Object.entries(ids).map(([name, id]) => [
+    name,
+    signToken({ sub: id, role: ["student", "stranger"].includes(name) ? "student" : "alumni" }, 15 * 60),
+  ]));
   let locationId;
   let locationFails = false;
   let identityFails = false;
   const double = express();
   double.use(express.json());
   double.use((req, res, next) => {
-    if (req.get("Authorization") !== "Bearer " + secrets)
+    if (req.get("X-Service-Key") !== secrets)
       return res.sendStatus(401);
     next();
   });
@@ -104,11 +89,11 @@ async function main() {
       'SELECT id,role,account_status AS "accountStatus" FROM users WHERE id=$1',
       [req.params.id],
     );
-    res.json({ user: rows[0] });
+    res.json(rows[0]);
   });
   double.post("/internal/locations/resolve", (req, res) => {
     if (locationFails) return res.sendStatus(503);
-    res.json({ location: { id: locationId } });
+    res.json({ location: { name: "Demo city", country: "Egypt", latitude: 30, longitude: 31 }, cached: true });
   });
   const server = double.listen(0, "0.0.0.0");
   await once(server, "listening");
@@ -138,14 +123,10 @@ async function main() {
     cloud("update", {
       settings: {
         ...original,
-        JWT_PUBLIC_KEY: publicKey.export({ type: "spki", format: "pem" }),
-        JWT_ISSUER: "alumnilink-accounts",
-        JWT_AUDIENCE: "alumnilink-api",
-        ADMIN_API_URL: doubleUrl,
+        TOKEN_SECRET: tokenSecret,
+        SERVICE_KEY: secrets,
+        IDENTITY_API_URL: doubleUrl,
         SEARCH_API_URL: doubleUrl,
-        PROFILE_TO_ADMIN_TOKEN: secrets,
-        PROFILE_TO_SEARCH_TOKEN: secrets,
-        SEARCH_TO_PROFILE_TOKEN: secrets,
       },
     });
     const config = await (
@@ -250,7 +231,7 @@ async function main() {
     const route =
       "/internal/profiles/" + profileId + "/contact?requestId=" + requestId;
     const headers = {
-      Authorization: "Bearer " + secrets,
+      "X-Service-Key": secrets,
       "X-User-Token": tokens.student,
     };
     await check("Pending contact denied", route, 403, { who: null, headers });

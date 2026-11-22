@@ -1,9 +1,9 @@
 {
-  "scope": "Profile and Privacy. Evidence references the actual deployed test checks. Live teammate integration is pending.",
+  "scope": "Profile and Privacy. The deployed evidence is from the original local deployment. The current shared-token contract is verified separately in local tests.",
   "threats": [
     {
       "threat": "A Student calls Alumni profile operations",
-      "control": "RS256 user token plus backend role check",
+      "control": "Signed user token verified by shared/auth.js plus backend role check",
       "test": "Student role denial"
     },
     {

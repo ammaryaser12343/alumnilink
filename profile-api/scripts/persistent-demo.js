@@ -1,8 +1,8 @@
 // Local development only. Never package this script or its owner credentials.
 const { Pool } = require('pg');
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const { randomUUID, randomBytes, generateKeyPairSync } = require('node:crypto');
+const { signToken, verifyToken } = require('../../shared/auth');
+const { randomUUID, randomBytes } = require('node:crypto');
 const { spawnSync } = require('node:child_process');
 const fs = require('node:fs/promises');
 const path = require('node:path');
@@ -64,8 +64,10 @@ async function reopenDemo() {
   const response = await fetch(url,{headers:{Origin:origin},signal:AbortSignal.timeout(8000)});
   if (!response.ok) throw new Error('The existing demo is unavailable. Stop it with demo.ps1 -Stop, then start again.');
   const { token } = await response.json();
-  const claims = jwt.verify(token,current.settings.JWT_PUBLIC_KEY,{algorithms:['RS256'],issuer:'alumnilink-local-demo',audience:'alumnilink-api'});
-  if (claims.sub !== state.userId || claims.role !== 'alumni') throw new Error('The running session is not your demo account.');
+  if (!current.settings.TOKEN_SECRET) throw new Error('Stop the older demo and redeploy Profile before reopening it.');
+  process.env.TOKEN_SECRET = current.settings.TOKEN_SECRET;
+  const claims = verifyToken(token);
+  if (claims?.sub !== state.userId || claims.role !== 'alumni') throw new Error('The running session is not your demo account.');
   const api = /http:\/\/[0-9a-z]+\.execute-api\.localhost\.floci\.io:4566/.exec(current.config)?.[0];
   if (!api) throw new Error('The local Profile API address is missing.');
   const checked = await fetch(api+'/api/profiles/me',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(15000)});
@@ -123,25 +125,24 @@ async function main() {
     const identity = (await db.query('SELECT role,account_status FROM users WHERE id=$1', [state.userId])).rows[0];
     if (identity?.role !== 'alumni' || identity.account_status !== 'active')
       throw new Error('The local demo identity is not an active Alumni account.');
-    const location = await db.query(`INSERT INTO locations(query_key,name,country,latitude,longitude)
+    await db.query(`INSERT INTO locations(query_key,name,country,latitude,longitude)
       VALUES($1,'Demo city','Egypt',30,31) ON CONFLICT(query_key) DO UPDATE SET query_key=EXCLUDED.query_key RETURNING id`, [state.locationKey]);
     const serviceToken = randomBytes(32).toString('hex');
-    const { privateKey, publicKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
-    const issueToken = () => jwt.sign({ role: 'alumni' }, privateKey, {
-      algorithm: 'RS256', subject: state.userId, issuer: 'alumnilink-local-demo', audience: 'alumnilink-api', expiresIn: '5m',
-    });
+    const tokenSecret = randomBytes(32).toString('hex');
+    process.env.TOKEN_SECRET = tokenSecret;
+    const issueToken = () => signToken({ sub: state.userId, role: 'alumni' }, 5 * 60);
     const doubles = express();
     doubles.use(express.json());
-    doubles.use((req,res,next) => req.get('Authorization') === 'Bearer ' + serviceToken ? next() : res.sendStatus(401));
+    doubles.use((req,res,next) => req.get('X-Service-Key') === serviceToken ? next() : res.sendStatus(401));
     doubles.get('/internal/users/:id/status', async (req,res) => {
       if (req.params.id !== state.userId) return res.sendStatus(404);
       try {
         const result = await db.query('SELECT id,role,account_status AS "accountStatus" FROM users WHERE id=$1', [state.userId]);
         if (!result.rows[0]) return res.sendStatus(404);
-        res.json({ user: result.rows[0] });
+        res.json(result.rows[0]);
       } catch { res.sendStatus(503); }
     });
-    doubles.post('/internal/locations/resolve', (_req,res) => res.json({ location: { id: location.rows[0].id } }));
+    doubles.post('/internal/locations/resolve', (_req,res) => res.json({ location: { name: "Demo city", country: "Egypt", latitude: 30, longitude: 31 }, cached: true }));
     services = doubles.listen(0, '0.0.0.0');
     await once(services, 'listening');
     const sessionApp = express();
@@ -166,9 +167,8 @@ async function main() {
     const sessionUrl = 'http://127.0.0.1:' + sessions.address().port + sessionRoute;
     const doubleUrl = 'http://host.docker.internal:' + services.address().port;
     cloud('settings', { settings: { ...original.settings,
-      JWT_PUBLIC_KEY: publicKey.export({ type:'spki', format:'pem' }), JWT_ISSUER:'alumnilink-local-demo', JWT_AUDIENCE:'alumnilink-api',
-      ADMIN_API_URL:doubleUrl, SEARCH_API_URL:doubleUrl,
-      PROFILE_TO_ADMIN_TOKEN:serviceToken, PROFILE_TO_SEARCH_TOKEN:serviceToken, SEARCH_TO_PROFILE_TOKEN:serviceToken,
+      TOKEN_SECRET: tokenSecret, SERVICE_KEY: serviceToken,
+      IDENTITY_API_URL: doubleUrl, SEARCH_API_URL: doubleUrl,
     } });
     // Publish the current frontend client; no demo endpoint is added to its normal config.
     cloud('upload',{ key:'js/profile-client.js', body:await fs.readFile(path.join(base,'../frontend/js/profile-client.js'),'utf8'), contentType:'application/javascript' });
@@ -178,7 +178,7 @@ async function main() {
     if ((await fetch(sessionUrl)).status !== 403) throw new Error('Session origin restriction failed.');
     const renewed = await fetch(sessionUrl,{headers:{Origin:origin}});
     const { token } = await renewed.json();
-    if (jwt.verify(token,publicKey,{algorithms:['RS256'],issuer:'alumnilink-local-demo',audience:'alumnilink-api'}).sub !== state.userId)
+    if (verifyToken(token)?.sub !== state.userId)
       throw new Error('Session renewal failed.');
     const api = /http:\/\/[0-9a-z]+\.execute-api\.localhost\.floci\.io:4566/.exec(original.config)?.[0];
     const response = await fetch(api + '/api/profiles/me',{headers:{Authorization:'Bearer '+token}});

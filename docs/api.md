@@ -83,11 +83,10 @@ Missing or wrong key: 401 `SERVICE_KEY_INVALID`. Every call times out after 3 se
 | Caller -> Callee | Method | Endpoint | Answer |
 |---|---|---|---|
 | Profile -> Search | POST | /internal/locations/resolve `{ "location": "Cairo" }` | 200 `{ "location": { "name", "country", "latitude", "longitude" }, "cached": true }`, 400, 404 `LOCATION_NOT_FOUND`, 503 `GEOCODING_UNAVAILABLE` |
-| Search -> Identity | GET | /internal/users/:id/status | 200 `{ "id", "role", "accountStatus" }`, 404 if the user does not exist |
-| Search -> Profile | GET | /internal/profiles/:id/contact (`:id` = profile id) | 200 `{ "profileId", "contactEmail" }` (`contactEmail` may be null), 404 if no profile |
+| Search or Profile -> Identity | GET | /internal/users/:id/status | 200 `{ "id", "role", "accountStatus" }`, 404 if the user does not exist |
+| Search -> Profile | GET | /internal/profiles/:id/contact?requestId=:requestId with X-User-Token | 200 `{ "profileId", "contactEmail" }` (email may be null), 401 missing credentials, 403 if the request does not grant access |
 
-Search already calls the last two with exactly these shapes. Until they exist,
-`search-api/scripts/mock-services.js` stands in for them locally.
+Search sends the original Student token in X-User-Token and the accepted request ID in the query. Profile checks the Student, the target profile and the current accepted status before returning contact details. The standalone Search demo can use `search-api/scripts/mock-services.js`.
 
 ## Administration backend (Daniel), local port 3003
 

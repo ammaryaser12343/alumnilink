@@ -2,13 +2,13 @@ const { ApiError } = require("./errors");
 
 function createServiceClient({
   baseUrl,
-  token,
+  serviceKey,
   timeoutMs = 3000,
   fetchImpl = fetch,
   service,
 }) {
   return async (path, { body, requestId } = {}) => {
-    if (!baseUrl || !token || token.length < 32) {
+    if (!baseUrl || !serviceKey || serviceKey.length < 32) {
       throw new ApiError(
         503,
         "DEPENDENCY_UNAVAILABLE",
@@ -28,7 +28,7 @@ function createServiceClient({
       const response = await fetchImpl(url, {
         method: body ? "POST" : "GET",
         headers: {
-          Authorization: "Bearer " + token,
+          "X-Service-Key": serviceKey,
           "X-Request-Id": requestId,
           ...(body ? { "Content-Type": "application/json" } : {}),
         },

@@ -53,8 +53,8 @@ function createStore(db) {
         if (create) {
           const { rows } = await tx.query(
             `INSERT INTO alumni_profiles
-            (id,user_id,graduation_year,company,industry,bio,contact_email,location_id,location)
-            VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT(user_id) DO NOTHING RETURNING id`,
+            (id,user_id,graduation_year,company,industry,bio,contact_email,location)
+            VALUES($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT(user_id) DO NOTHING RETURNING id`,
             [
               randomUUID(),
               userId,
@@ -63,7 +63,6 @@ function createStore(db) {
               changes.industry ?? "",
               changes.bio ?? "",
               changes.contactEmail ?? null,
-              changes.locationId ?? null,
               changes.location ?? null,
             ],
           );
@@ -87,8 +86,8 @@ function createStore(db) {
             graduation_year=COALESCE($2,graduation_year), company=COALESCE($3,company),
             industry=COALESCE($4,industry), bio=COALESCE($5,bio),
             contact_email=CASE WHEN $6 THEN $7 ELSE contact_email END,
-            location_id=CASE WHEN $8 THEN $9 ELSE location_id END,
-            location=CASE WHEN $8 THEN $10 ELSE location END, updated_at=now()
+            location_id=CASE WHEN $8 THEN NULL ELSE location_id END,
+            location=CASE WHEN $8 THEN $9 ELSE location END, updated_at=now()
             WHERE id=$1`,
             [
               profileId,
@@ -98,8 +97,7 @@ function createStore(db) {
               changes.bio ?? null,
               Object.hasOwn(changes, "contactEmail"),
               changes.contactEmail ?? null,
-              Object.hasOwn(changes, "locationId"),
-              changes.locationId ?? null,
+              Object.hasOwn(changes, "location"),
               changes.location ?? null,
             ],
           );
@@ -170,15 +168,8 @@ function createStore(db) {
         JOIN users recipient ON recipient.id=p.user_id
         WHERE p.id=$1 AND r.id=$2 AND r.student_user_id=$3 AND r.status='accepted' AND p.is_active
         AND sender.role='student' AND sender.account_status='active'
-        AND recipient.role='alumni' AND recipient.account_status='active' AND p.contact_email IS NOT NULL`,
+        AND recipient.role='alumni' AND recipient.account_status='active'`,
         [profileId, requestId, senderId],
-      );
-      return rows[0];
-    },
-    async locationExists(id) {
-      const { rows } = await db.query(
-        "SELECT id,name,country FROM locations WHERE id=$1",
-        [id],
       );
       return rows[0];
     },
