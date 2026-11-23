@@ -1,4 +1,4 @@
-// The "admin clerk": all database work for the admin's four powers.
+// The "admin clerk": all database work for the admin's powers.
 // Every ${value} is sent separately from the SQL text (parameterized),
 // so nothing a user types can change the query (blocks SQL injection).
 const { getSql } = require('./db');
@@ -102,4 +102,31 @@ async function listAuditLogs({ service = null, action = null, outcome = null, fr
   return { page, pageSize: PAGE_SIZE, total: countRows[0].total, results: rows };
 }
 
-module.exports = { listVerifications, reviewVerification, changeUserStatus, listAuditLogs };
+// Job 5: list accounts with optional filters, 20 per page, newest first.
+// q matches part of the name or email. Never returns password hashes.
+async function listUsers({ role = null, status = null, q = null, page = 1 }) {
+  const sql = getSql();
+  const offset = (page - 1) * PAGE_SIZE;
+  // Treat % and _ in the search text as normal characters, not wildcards.
+  const pattern = q ? `%${q.replace(/[\\%_]/g, '\\$&')}%` : null;
+
+  const rows = await sql`
+    SELECT id, name, email, role, account_status, created_at
+    FROM users
+    WHERE (${role}::text    IS NULL OR role = ${role})
+      AND (${status}::text  IS NULL OR account_status = ${status})
+      AND (${pattern}::text IS NULL OR name ILIKE ${pattern} OR email ILIKE ${pattern})
+    ORDER BY created_at DESC
+    LIMIT ${PAGE_SIZE} OFFSET ${offset}`;
+
+  const countRows = await sql`
+    SELECT COUNT(*)::int AS total
+    FROM users
+    WHERE (${role}::text    IS NULL OR role = ${role})
+      AND (${status}::text  IS NULL OR account_status = ${status})
+      AND (${pattern}::text IS NULL OR name ILIKE ${pattern} OR email ILIKE ${pattern})`;
+
+  return { page, pageSize: PAGE_SIZE, total: countRows[0].total, results: rows };
+}
+
+module.exports = { listVerifications, reviewVerification, changeUserStatus, listAuditLogs, listUsers };

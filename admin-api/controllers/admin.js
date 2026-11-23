@@ -1,11 +1,12 @@
-// Administration and Verification: the admin's four powers. Owner: Daniel.
+// Administration and Verification: the admin's powers. Owner: Daniel.
 // Every action that changes something writes a line in the audit log.
 const { sendError } = require('../../shared/errors');
 const {
   listVerifications: findVerifications,
   reviewVerification: decideVerification,
   changeUserStatus,
-  listAuditLogs
+  listAuditLogs,
+  listUsers: findUsers
 } = require('../services/adminService');
 const { writeAuditLog } = require('../services/auditLog');
 
@@ -29,6 +30,13 @@ function isRealDate(text) {
   if (typeof text !== 'string' || !DATE_PATTERN.test(text)) return false;
   const date = new Date(`${text}T00:00:00Z`);
   return !Number.isNaN(date.getTime()) && date.toISOString().startsWith(text);
+}
+
+// ?page= : whole number 1 to 500, default 1. Returns a number, or null if invalid.
+function readPage(value) {
+  if (value === undefined) return 1;
+  const page = Number(value);
+  return Number.isInteger(page) && page >= 1 && page <= 500 ? page : null;
 }
 
 // GET /api/admin/verifications?status=pending|approved|rejected|all  (default pending)
@@ -142,6 +150,49 @@ async function updateUserStatus(req, res, next) {
   }
 }
 
+// GET /api/admin/users?role=&status=&q=&page=
+async function listUsers(req, res, next) {
+  try {
+    const paramError = unexpectedParams(req.query, ['role', 'status', 'q', 'page']);
+    if (paramError) return sendError(res, 400, 'VALIDATION_ERROR', paramError);
+
+    const { role, status } = req.query;
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : req.query.q;
+
+    if (role !== undefined && !['student', 'alumni', 'admin'].includes(role)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'role must be student, alumni or admin.');
+    }
+    if (status !== undefined && !['pending', 'active', 'suspended', 'rejected'].includes(status)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'status must be pending, active, suspended or rejected.');
+    }
+    if (q !== undefined && q !== '' && (typeof q !== 'string' || q.length < 2 || q.length > 100)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'Search text must be 2 to 100 characters.');
+    }
+    const page = readPage(req.query.page);
+    if (page === null) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'page must be a whole number from 1 to 500.');
+    }
+
+    const data = await findUsers({ role: role || null, status: status || null, q: q || null, page });
+
+    return res.status(200).json({
+      page: data.page,
+      pageSize: data.pageSize,
+      total: data.total,
+      results: data.results.map((row) => ({
+        id: row.id,
+        name: row.name,
+        email: row.email,
+        role: row.role,
+        accountStatus: row.account_status,
+        createdAt: row.created_at
+      }))
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 // GET /api/admin/logs?service=&action=&outcome=&from=YYYY-MM-DD&to=YYYY-MM-DD&page=
 async function listLogs(req, res, next) {
   try {
@@ -168,13 +219,9 @@ async function listLogs(req, res, next) {
     if (from && to && from > to) {
       return sendError(res, 400, 'VALIDATION_ERROR', 'from must be on or before to.');
     }
-
-    let page = 1;
-    if (req.query.page !== undefined) {
-      page = Number(req.query.page);
-      if (!Number.isInteger(page) || page < 1 || page > 500) {
-        return sendError(res, 400, 'VALIDATION_ERROR', 'page must be a whole number from 1 to 500.');
-      }
+    const page = readPage(req.query.page);
+    if (page === null) {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'page must be a whole number from 1 to 500.');
     }
 
     const data = await listAuditLogs({
@@ -205,4 +252,4 @@ async function listLogs(req, res, next) {
   }
 }
 
-module.exports = { listVerifications, reviewVerification, updateUserStatus, listLogs };
+module.exports = { listVerifications, reviewVerification, updateUserStatus, listUsers, listLogs };

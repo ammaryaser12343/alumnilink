@@ -10,6 +10,7 @@ router.use(requireLogin, requireAdmin);
 
 router.get('/verifications', adminController.listVerifications);
 router.patch('/verifications/:id', adminController.reviewVerification);
+router.get('/users', adminController.listUsers);
 router.patch('/users/:id/status', adminController.updateUserStatus);
 router.get('/logs', adminController.listLogs);
 
