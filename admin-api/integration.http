@@ -1,0 +1,55 @@
+### Integration: Ammar's Search desk asks Daniel's desk "is this user active?"
+### Needs BOTH running: admin-api on 3003 and search-api on 3002.
+### Ammar's desk remembers each answer for 60 seconds, so wait 1 minute after suspending.
+
+@admin = http://localhost:3003
+@search = http://localhost:3002
+@ticket = XXXX.DUMMY.TOKEN.XXXX
+@studentId = 91e47e82-ed87-4e12-b7d8-83ac4f3f91c8
+
+@adminToken = {{adminLogin.response.body.token}}
+@studentToken = {{studentLogin.response.body.token}}
+
+### I1. Admin logs in at Daniel's desk  -> 200 token
+# @name adminLogin
+POST {{admin}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "{{$dotenv ADMIN_TEST_EMAIL}}", "password": "{{$dotenv ADMIN_TEST_PASSWORD}}" }
+
+### I2. Student logs in at Daniel's desk  -> 200 token
+# @name studentLogin
+POST {{admin}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Student123" }
+
+### I3. Student searches at AMMAR's desk  -> 200 with alumni results
+### (Ammar's desk accepted Daniel's badge AND got "active" from Daniel's phone line)
+GET {{search}}/api/alumni?q=software
+Authorization: Bearer {{studentToken}}
+
+### I4. Admin suspends the student at Daniel's desk  -> 200 "Account suspended."
+PATCH {{admin}}/api/admin/users/{{studentId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "suspended" }
+
+### I5. WAIT 1 MINUTE, then the student searches again  -> 403 ACCOUNT_INACTIVE
+### (her badge is still valid, but Daniel's desk now says "suspended")
+GET {{search}}/api/alumni?q=software
+Authorization: Bearer {{studentToken}}
+
+### I6. Admin reactivates the student  -> 200 "Account reactivated."
+PATCH {{admin}}/api/admin/users/{{studentId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "active" }
+
+### I7. WAIT 1 MINUTE, then search again  -> 200 results again
+GET {{search}}/api/alumni?q=software
+Authorization: Bearer {{studentToken}}
