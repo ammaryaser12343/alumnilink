@@ -1,0 +1,40 @@
+/* Daniel's pages (login, sign-up, admin). Same look as the rest of the team:
+   colours and spacing come from css/styles.css (Ammar) and css/profile.css (Ahmed). */
+
+/* "Sign out" button in the header, same as Ahmed's pages */
+.site-header #logout { border: 1px solid #bcccdc; }
+
+/* Narrow column for login and sign-up, like Ahmed's .profile-main */
+.auth-main { max-width: 28rem; }
+
+/* White form card, same as Ahmed's .profile-form */
+.auth-form { padding: 1rem; background: #fff; border: 1px solid #d9e2ec; border-radius: 8px; }
+.auth-form label { display: grid; gap: .35rem; margin: .85rem 0 .45rem; font-weight: 600; }
+.auth-form input, .auth-form select { width: 100%; font: inherit; color: inherit; padding: .45rem .5rem; border: 1px solid #bcccdc; border-radius: 6px; }
+.auth-form .help { margin: .3rem 0 .8rem; font-size: .9rem; font-weight: 400; color: #52667b; }
+.auth-form .actions { display: flex; flex-wrap: wrap; gap: .65rem; margin-top: 1rem; }
+.turnstile { margin-top: .8rem; min-height: 65px; }
+
+/* Message box, same as Ahmed's #status: green for success, red for errors */
+.form-status:not(:empty) { border-left: 4px solid #367963; background: #e4f4ed; padding: .7rem; }
+.form-status.error { border-color: #a13a28; background: #fff0ed; }
+
+/* ---------- Admin page ---------- */
+
+/* Tabs: same buttons as the rest of the site (navy = selected, grey = not) */
+.tabs { display: flex; flex-wrap: wrap; gap: .5rem; margin: 0 0 1rem; }
+.tabs button { background: #e4e7eb; color: #1f2933; }
+.tabs button[aria-selected="true"] { background: #17365d; color: #fff; }
+
+/* Tables: white card with the same border and radius as Ammar's result cards */
+.table-wrap { overflow-x: auto; background: #fff; border: 1px solid #d9e2ec; border-radius: 8px; margin-top: .75rem; }
+.data-table { width: 100%; border-collapse: collapse; font-size: .92rem; }
+.data-table th, .data-table td { text-align: left; padding: .55rem .75rem; border-bottom: 1px solid #e4e7eb; vertical-align: top; }
+.data-table th { background: #f0f4f8; font-size: .85rem; color: #17365d; }
+.data-table tr:last-child td { border-bottom: 0; }
+.data-table .actions { display: flex; flex-wrap: wrap; gap: .4rem; }
+.data-table button { font-size: .85rem; padding: .3rem .7rem; }
+
+/* Extra status pills, same colours as Ammar's .status-accepted / .status-declined */
+.status-active, .status-approved, .status-success { background: #d5f5e3; color: #1d6b3f; }
+.status-suspended, .status-rejected { background: #fde2e1; color: #8a1c1c; }
