@@ -8,8 +8,8 @@ const express = require("express");
 const { signToken } = require("../../shared/auth");
 const { PGlite } = require("@electric-sql/pglite");
 const { createApp } = require("../app");
-const { createStore } = require("../store");
-const { createServiceClient } = require("../service-client");
+const { createStore } = require("../services/profileStore");
+const { createServiceClient } = require("../services/serviceClient");
 
 async function serve(app, t) {
   const server = app.listen(0, "127.0.0.1");

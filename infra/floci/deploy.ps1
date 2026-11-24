@@ -18,8 +18,16 @@ $build=Join-Path $tempRoot ('alumnilink-profile-'+[Guid]::NewGuid().ToString('N'
 New-Item -ItemType Directory -Path (Join-Path $build 'profile-api') -Force | Out-Null
 try {
  $bundle=Join-Path $build 'profile-api'
- $files=@('app.js','profile-auth.js','errors.js','lambda.js','runtime.js','store.js','validation.js','service-client.js','package.json','package-lock.json')
- foreach($name in $files) { Copy-Item -LiteralPath (Join-Path $profile $name) -Destination $bundle }
+ $files=@(
+  'app.js','errors.js','lambda.js','runtime.js','validation.js','package.json','package-lock.json',
+  'profile-auth.js',
+  'services/db.js','services/profileStore.js','services/serviceClient.js'
+ )
+ foreach ($name in $files) {
+  $destination=Join-Path $bundle $name
+  New-Item -ItemType Directory -Path (Split-Path -Parent $destination) -Force | Out-Null
+  Copy-Item -LiteralPath (Join-Path $profile $name) -Destination $destination
+ }
  $sharedBundle=Join-Path $build 'shared'
  New-Item -ItemType Directory -Path $sharedBundle -Force | Out-Null
  foreach ($name in @('auth.js','errors.js')) { Copy-Item -LiteralPath (Join-Path $project ('shared/' + $name)) -Destination $sharedBundle }

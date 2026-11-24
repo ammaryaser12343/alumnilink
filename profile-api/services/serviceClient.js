@@ -1,4 +1,4 @@
-const { ApiError } = require("./errors");
+const { ApiError } = require("../errors");
 
 function createServiceClient({
   baseUrl,

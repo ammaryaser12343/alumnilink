@@ -1,6 +1,6 @@
 const { randomUUID } = require("node:crypto");
-const { ApiError } = require("./errors");
-const { privacyFields } = require("./validation");
+const { ApiError } = require("../errors");
+const { privacyFields } = require("../validation");
 
 const columns = `p.id, p.user_id AS "userId", p.graduation_year AS "graduationYear",
  COALESCE(p.company,'') AS company, COALESCE(p.industry,'') AS industry, COALESCE(p.bio,'') AS bio,
