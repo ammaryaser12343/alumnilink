@@ -20,7 +20,9 @@ try {
  $bundle=Join-Path $build 'profile-api'
  $files=@(
   'app.js','errors.js','lambda.js','runtime.js','validation.js','package.json','package-lock.json',
-  'profile-auth.js',
+  'controllers/internal.js','controllers/profiles.js',
+  'middleware/activeAccount.js','middleware/auth.js',
+  'routes/internal.js','routes/profiles.js',
   'services/db.js','services/profileStore.js','services/serviceClient.js'
  )
  foreach ($name in $files) {

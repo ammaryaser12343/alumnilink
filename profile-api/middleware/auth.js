@@ -1,5 +1,5 @@
 const { createHash, timingSafeEqual } = require("node:crypto");
-const { verifyToken } = require("../shared/auth");
+const { verifyToken } = require("../../shared/auth");
 
 function failure(status, code, message) {
   return Object.assign(new Error(message), { status, code });
