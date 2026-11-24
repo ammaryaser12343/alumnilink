@@ -34,7 +34,7 @@
     {
       "threat": "A client injects SQL or stored scripts through profile input",
       "control": "Parameterized SQL, input lengths and types, browser input values/textContent",
-      "evidence": "profile-api/store.js; validation.js; frontend/js/profile.js",
+      "evidence": "profile-api/services/profileStore.js; profile-api/validation.js; frontend/js/profile.js",
       "limitation": "Dedicated SQL injection and browser stored-XSS probes remain to be added to the group security pack"
     },
     {

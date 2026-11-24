@@ -12,6 +12,15 @@ npm start
 
 The local server listens on port 3001 by default. Configure the variables in .env.example. DATABASE_URL is the restricted Profile database connection. MIGRATION_DATABASE_URL is the separate owner connection used only by migration and controlled integration tests. Both values stay in the ignored .env file. Use `npm run db:migrate` for the additive migration after inspecting the target schema.
 
+## Folder structure
+
+- `routes/` maps URLs and HTTP methods to the handlers.
+- `controllers/` validates requests and handles Profile, Privacy, and contact email responses.
+- `middleware/` verifies login tokens, service credentials, and account eligibility.
+- `services/` holds PostgreSQL access and calls to Identity and Locations.
+- `db/` contains migrations and database setup, `test/` contains automated tests, and `scripts/` contains local Floci checks.
+- `app.js` wires the routes and shared request handling. `server.js` starts the local API, and `lambda.js` runs it on Floci.
+
 ## Routes
 
 | Method | Path | Result |
