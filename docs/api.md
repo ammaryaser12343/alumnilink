@@ -33,17 +33,21 @@ All three backends check it with the same `TOKEN_SECRET`.
 
 ## Search, Locations and Contact backend (Ammar), local port 3002
 
-Every `/api` route checks the token, then the role, then asks the Identity service whether the
-account is still active (cached 60 seconds). Suspended or pending accounts get 403 `ACCOUNT_INACTIVE`;
-if Identity cannot be reached the answer is 503 `SERVICE_UNAVAILABLE`.
+Every `/api` route checks, in this order: the token (401), the role (403), the request limit of
+60 per user per minute (429 `RATE_LIMITED`, with `Retry-After: 60`), then asks the Identity service
+whether the account is still active (cached 60 seconds). Suspended or pending accounts get 403
+`ACCOUNT_INACTIVE`; if Identity cannot be reached the answer is 503 `SERVICE_UNAVAILABLE`.
+Bodies over 10 KB get 413 `PAYLOAD_TOO_LARGE`. On Floci or AWS the service runs as a Lambda
+function behind API Gateway; the routes and answers are the same.
 
 | Method | Endpoint | Purpose | Success | Errors | Roles |
 |---|---|---|---|---|---|
-| GET | /api/alumni | Search, filter, near-me, sort, paginate | 200 | 400, 401, 403, 503 | Alumni, Student, Admin |
-| GET | /api/alumni/:id | Visible fields of one profile | 200 | 401, 403, 404, 503 | Alumni, Student, Admin |
-| POST | /api/contact-requests | Ask an alum for contact details | 201 | 400, 401, 403, 404, 409, 429, 503 | Student |
-| GET | /api/contact-requests | Student: sent. Alum: received | 200 | 401, 403, 503 | Student, Alumni |
-| PATCH | /api/contact-requests/:id | Accept or decline (own requests only) | 200 | 400, 401, 403, 404, 409, 503 | Alumni |
+| GET | /api/alumni | Search, filter, near-me, sort, paginate | 200 | 400, 401, 403, 429, 503 | Alumni, Student, Admin |
+| GET | /api/alumni/filters | Filter options built from visible data only | 200 | 400, 401, 403, 429, 503 | Alumni, Student, Admin |
+| GET | /api/alumni/:id | Visible fields of one profile (owner and admin also see hidden ones) | 200 | 401, 403, 404, 429, 503 | Alumni, Student, Admin |
+| POST | /api/contact-requests | Ask an alum for contact details | 201 | 400, 401, 403, 404, 409, 413, 429, 503 | Student |
+| GET | /api/contact-requests | Student: sent. Alum: received | 200 | 401, 403, 429, 503 | Student, Alumni |
+| PATCH | /api/contact-requests/:id | Accept or decline (own requests only) | 200 | 400, 401, 403, 404, 409, 429, 503 | Alumni |
 
 Query parameters for `GET /api/alumni` (any other parameter answers 400):
 
@@ -61,6 +65,24 @@ Query parameters for `GET /api/alumni` (any other parameter answers 400):
 Response: `{ "page": 1, "pageSize": 10, "total": 21, "results": [ ... ] }`, plus
 `"near": { "name", "country", "radiusKm" }` and a `distanceKm` on each result for near-me searches.
 Hidden fields are removed from each result, and filters (including near-me distance) never match a hidden field.
+
+`GET /api/alumni/filters` takes one optional parameter, `industry` (one of `INDUSTRIES`); anything else
+answers 400. With `industry`, the year range, skills and locations are counted inside that industry.
+
+```json
+{
+  "industry": null,
+  "industries": [{ "name": "Software", "count": 4 }],
+  "graduationYears": { "min": 2009, "max": 2025 },
+  "skills": [{ "name": "python", "count": 5 }],
+  "locations": [{ "name": "Cairo", "count": 4 }],
+  "sorts": ["name", "newest", "oldest", "distance"],
+  "maxRadiusKm": 500
+}
+```
+
+Every industry is listed (count 0 if none). Skills and locations are the 20 most common. Only active
+alumni are counted, and only fields their owners left visible, so a count can never reveal a hidden value.
 Near-me errors: unknown place 400 `LOCATION_NOT_FOUND`; Open-Meteo down 503 `GEOCODING_UNAVAILABLE`
 (places already in the `locations` table still work, and searches without `near` are not affected).
 

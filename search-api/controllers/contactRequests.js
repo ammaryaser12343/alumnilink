@@ -39,8 +39,8 @@ async function createContactRequest(req, res, next) {
     }
 
     // Limits spam: a student can wait on at most 5 answers at a time.
+    // (The 429 itself is recorded by the auditDenied middleware.)
     if (await service.countPendingFromStudent(req.user.id) >= MAX_PENDING) {
-      await writeAuditLog({ actorUserId: req.user.id, action: 'CONTACT_REQUEST_CREATE', targetId: alumniId, outcome: 'rate_limited' });
       return sendError(res, 429, 'TOO_MANY_PENDING', `You already have ${MAX_PENDING} requests waiting for an answer.`);
     }
 

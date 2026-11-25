@@ -38,6 +38,25 @@ Authorization: Bearer {{token}}
 GET {{base}}/alumni?gradYear=2016&sort=newest&page=1
 Authorization: Bearer {{token}}
 
+### Filter options (industries with counts, year range, common skills and places) -> 200
+GET {{base}}/alumni/filters
+Authorization: Bearer {{token}}
+
+### Filter options inside one industry -> 200
+GET {{base}}/alumni/filters?industry=Software
+Authorization: Bearer {{token}}
+
+### Filter options: industry not in the list -> 400
+GET {{base}}/alumni/filters?industry=Hacking
+Authorization: Bearer {{token}}
+
+### Filter options: unknown parameter -> 400
+GET {{base}}/alumni/filters?limit=1000
+Authorization: Bearer {{token}}
+
+### Filter options without a token -> 401
+GET {{base}}/alumni/filters
+
 ### Near me: alumni within 50 km of Cairo, closest first -> 200 with distanceKm
 GET {{base}}/alumni?near=Cairo
 Authorization: Bearer {{token}}
@@ -214,6 +233,8 @@ Content-Type: application/json
 
 { "location": "Qwertyville" }
 
+### The numbered security tests (ST-01 to ST-27) run automatically:
+###   npm run test:security
 ### Failure cases to show at the discussion (no request file needed):
 ### - Stop the Identity service  -> every /api route answers 503 SERVICE_UNAVAILABLE.
 ### - Stop the Profile service   -> GET /contact-requests still 200, accepted items show contactUnavailable.

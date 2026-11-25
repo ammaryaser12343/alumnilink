@@ -1,0 +1,210 @@
+### Tests for the Identity and Administration API (Daniel)
+### Click "Send Request" above each test. The comment says what should come back.
+
+@baseUrl = http://localhost:3003
+# Cloudflare's test ticket. With the test secret key it always passes.
+@ticket = XXXX.DUMMY.TOKEN.XXXX
+
+# Copy these two from the T12 answer (the entry with daniel.test.student@example.com):
+# requestId = the "id" of that entry,  studentId = the "id" inside its "user"
+@requestId = 8ccb9e27-605a-4711-a394-590b15ae1c4d
+@studentId = 91e47e82-ed87-4e12-b7d8-83ac4f3f91c8
+
+# Badges are filled in automatically from the login answers (T10 and T15).
+@adminToken = {{adminLogin.response.body.token}}
+@adminId = {{adminLogin.response.body.user.id}}
+@studentToken = {{studentLogin.response.body.token}}
+
+
+############################## SIGN UP AND LOGIN ##############################
+
+### T1. Health check  -> 200 "status": "ok"
+GET {{baseUrl}}/api/health
+
+### T2. Sign up WITHOUT a Turnstile ticket  -> 403 BOT_CHECK_FAILED
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{ "name": "Test Student", "email": "daniel.test.student@example.com", "password": "Student123", "role": "student" }
+
+### T3. Sign up a student (correct)  -> 201, accountStatus "pending"  (already done, run only once)
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Test Student", "email": "daniel.test.student@example.com", "password": "Student123", "role": "student" }
+
+### T4. Same email again  -> 409 EMAIL_ALREADY_REGISTERED
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Copy Cat", "email": "daniel.test.student@example.com", "password": "Student123", "role": "student" }
+
+### T5. Try to sign up as admin  -> 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Sneaky", "email": "daniel.test.sneaky@example.com", "password": "Sneaky123", "role": "admin" }
+
+### T6. Weak password  -> 400 VALIDATION_ERROR
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "name": "Weak", "email": "daniel.test.weak@example.com", "password": "123", "role": "student" }
+
+### T7. Log in while still pending  -> 403 ACCOUNT_PENDING  (only before T13 approves her)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Student123" }
+
+### T8. Log in with the WRONG password  -> 401 "Email or password is incorrect."
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Wrong12345" }
+
+### T9. Log in with an email that doesn't exist  -> 401, SAME message as T8
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "nobody@example.com", "password": "Whatever123" }
+
+### T10. Log in as the admin  -> 200 with a "token"
+### The email and password come from admin-api/.env (ADMIN_TEST_EMAIL, ADMIN_TEST_PASSWORD),
+### so no admin password is ever written in this file or in GitHub.
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "{{$dotenv ADMIN_TEST_EMAIL}}", "password": "{{$dotenv ADMIN_TEST_PASSWORD}}" }
+
+
+############################## ADMIN POWERS ##############################
+
+### T11. Admin area with NO badge  -> 401 AUTH_REQUIRED
+GET {{baseUrl}}/api/admin/verifications
+
+### T12. Admin: the waiting list  -> 200, find daniel.test.student@example.com and copy the two ids
+GET {{baseUrl}}/api/admin/verifications
+Authorization: Bearer {{adminToken}}
+
+### T13. Admin approves the student  -> 200 "Account approved", accountStatus "active"  (already done)
+PATCH {{baseUrl}}/api/admin/verifications/{{requestId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "decision": "approved" }
+
+### T14. Decide the SAME request again  -> 409 VERIFICATION_ALREADY_REVIEWED
+PATCH {{baseUrl}}/api/admin/verifications/{{requestId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "decision": "rejected" }
+
+### T15. The student can log in  -> 200 with a "token"
+# @name studentLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Student123" }
+
+### T16. Student tries the admin area with their own badge  -> 403 FORBIDDEN
+GET {{baseUrl}}/api/admin/verifications
+Authorization: Bearer {{studentToken}}
+
+### T17. Admin suspends the student  -> 200 "Account suspended."
+PATCH {{baseUrl}}/api/admin/users/{{studentId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "suspended" }
+
+### T18. Suspend her again  -> 409 INVALID_STATUS_CHANGE
+PATCH {{baseUrl}}/api/admin/users/{{studentId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "suspended" }
+
+### T19. Suspended student tries to log in  -> 403 ACCOUNT_SUSPENDED
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "daniel.test.student@example.com", "password": "Student123" }
+
+### T20. Admin tries to suspend THEMSELVES  -> 403 CANNOT_CHANGE_ADMIN
+PATCH {{baseUrl}}/api/admin/users/{{adminId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "suspended" }
+
+### T21. Admin reactivates the student  -> 200 "Account reactivated."
+PATCH {{baseUrl}}/api/admin/users/{{studentId}}/status
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "status": "active" }
+
+### T22. Wrong decision word  -> 400 VALIDATION_ERROR
+PATCH {{baseUrl}}/api/admin/verifications/{{requestId}}
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "decision": "maybe" }
+
+### T23. Request id that doesn't exist  -> 404 VERIFICATION_NOT_FOUND
+PATCH {{baseUrl}}/api/admin/verifications/11111111-1111-4111-8111-111111111111
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{ "decision": "approved" }
+
+
+############################## AUDIT LOG ##############################
+
+### T24. Diary: only suspensions from the admin desk  -> 200, shows the T17 suspension
+GET {{baseUrl}}/api/admin/logs?service=admin&action=SUSPEND_USER
+Authorization: Bearer {{adminToken}}
+
+### T25. Diary: logins today (change the date if needed)  -> 200
+GET {{baseUrl}}/api/admin/logs?action=LOGIN&from=2026-11-22&to=2026-11-22
+Authorization: Bearer {{adminToken}}
+
+### T26. Diary with a parameter we don't allow  -> 400 VALIDATION_ERROR
+GET {{baseUrl}}/api/admin/logs?sort=newest
+Authorization: Bearer {{adminToken}}
+
+
+############################## INTERNAL (phone line for the other backends) ##############################
+### The service key is read from admin-api/.env, never written here.
+
+### T27. Call the line with NO service key  -> 401 SERVICE_KEY_INVALID
+GET {{baseUrl}}/internal/users/{{studentId}}/status
+
+### T28. Call the line with a WRONG service key  -> 401 SERVICE_KEY_INVALID
+GET {{baseUrl}}/internal/users/{{studentId}}/status
+X-Service-Key: this-is-not-the-real-key-at-all-1234567890
+
+### T29. Correct key, the student  -> 200 { "id", "role": "student", "accountStatus": "active" }
+GET {{baseUrl}}/internal/users/{{studentId}}/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}
+
+### T30. Correct key, an id that doesn't exist  -> 404 USER_NOT_FOUND
+GET {{baseUrl}}/internal/users/11111111-1111-4111-8111-111111111111/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}
+
+### T31. Correct key, nonsense id  -> 404 USER_NOT_FOUND (not a crash)
+GET {{baseUrl}}/internal/users/not-an-id/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}

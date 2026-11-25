@@ -12,6 +12,8 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
 
 **Search and Directory** (`search-api`, built)
 - Search by name or skill, location, industry and graduation year, with sorting and pagination
+- Filter options (`/api/alumni/filters`): industries with counts, graduation year range, common skills and places,
+  counted only from visible data
 - Near-me search: alumni within a chosen distance of a city, closest first, using the
   [Open-Meteo Geocoding API](https://open-meteo.com/en/docs/geocoding-api); each place is looked up once and cached
 - Privacy enforced on every result: hidden fields are removed, and filters (including distance) never match a hidden field
@@ -19,7 +21,10 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
   from the Profile service only after acceptance
 - Checks with the Identity service on every request that the account is still active (fails closed with 503)
 - Service-to-service calls authenticated with a shared service key, with a 3-second timeout
-- Security events written to an audit log
+- Audit log: profile views, contact actions and every refused request (401, 403, 429), to CloudWatch Logs
+  and the shared `audit_logs` table
+- Rate limit of 60 requests per user per minute, counted in DynamoDB
+- Runs on Floci (local AWS emulator) as a Lambda function behind API Gateway, with its secrets in Secrets Manager
 
 **Profile and Privacy** (`profile-api`, built and tested independently)
 - Alumni profile, skills, privacy, activation and consent-checked contact access.
@@ -59,7 +64,9 @@ The full endpoint contract, including the internal calls, is in [`docs/api.md`](
 | Backend | Node.js 18+, Express, `cors`, `dotenv` |
 | Database | Neon serverless PostgreSQL (`@neondatabase/serverless`) |
 | External API | Open-Meteo Geocoding (free, no API key) |
-| Hosting | Floci for Profile and Privacy; Vercel setup for the Search demo |
+| Hosting | Floci (local AWS emulator) for all three backends; Vercel settings kept below as a fallback |
+| AWS (Search API) | Floci emulator: API Gateway, Lambda, Secrets Manager, DynamoDB, CloudWatch Logs, IAM; AWS SDK for JavaScript v3, `serverless-http` |
+| AWS (Profile, Admin) | See [infra/floci/README.md](infra/floci/README.md) and `admin-api/aws/` |
 | Testing | VS Code REST Client or Postman (`search-api/requests.http`) |
 
 ## Project structure
@@ -69,8 +76,10 @@ alumnilink/
 ├── frontend/       Web pages: search with near-me, contact requests
 ├── profile-api/    Profile, skills, privacy and contact disclosure backend
 ├── search-api/     Search, locations and contact requests backend
+│   ├── app.js        Express app; server.js runs it locally, lambda.js on AWS Lambda
 │   ├── controllers/  middleware/  routes/  services/
-│   ├── scripts/      mock-services.js, resolve-locations.js
+│   ├── aws/          deploy.js (Floci or AWS), logs.js (audit lines from CloudWatch)
+│   ├── scripts/      mock-services.js, resolve-locations.js, security-tests.js
 │   └── requests.http normal, invalid and security test requests
 ├── admin-api/      Administration and verification backend (placeholder handlers)
 ├── shared/         Error format, login-token and role checks, constants
@@ -145,6 +154,38 @@ node ../shared/scripts/make-test-token.js student   # or alumni / admin
 
 Test tokens only work with your local `TOKEN_SECRET`. Never use the token script in production.
 
+## Search API on Floci (AWS emulator)
+
+[Floci](https://github.com/floci-io/floci) runs AWS services on your computer. The Search API uses six of them:
+
+| AWS service | Used for |
+|---|---|
+| API Gateway (HTTP API) | Public entry point; sends every request to the Lambda function |
+| Lambda (Node.js 22) | Runs the same Express app through `lambda.js` |
+| Secrets Manager | `DATABASE_URL`, `TOKEN_SECRET`, `SERVICE_KEY` (secret `alumnilink/search`), read when the function starts |
+| DynamoDB | Request counts for the rate limit, shared by every Lambda instance; rows expire by TTL |
+| CloudWatch Logs | Function output and `AUDIT` lines, kept 14 days |
+| IAM | Function role limited to one secret, one table and its own log group |
+
+You need Docker Desktop (Floci runs Lambda functions in Docker) and the Search API `.env` filled in as above.
+
+1. Start Floci (the socket lets it start Lambda containers):
+   `docker run -d --name floci -p 4566:4566 -v /var/run/docker.sock:/var/run/docker.sock -e FLOCI_RUN_AS_ROOT=true floci/floci:latest`
+2. In `.env`, point the stand-ins at your computer (the deploy script rewrites `localhost` to
+   `host.docker.internal` for Lambda), then run `npm run mock-services` in its own terminal.
+3. Deploy: `npm run aws:deploy`. It prints the API address, for example
+   `http://<api-id>.execute-api.localhost.floci.io:4566/api/health`.
+4. Test through API Gateway: set `BASE_URL` to that address (without `/api/health`) and run `npm run test:security`.
+5. Read the audit trail from CloudWatch: `npm run aws:logs`.
+
+Running `npm run aws:deploy` again updates everything in place. Secrets never go into Lambda settings or the code.
+
+## Security tests
+
+`npm run test:security` (in `search-api`) runs 27 numbered tests, ST-01 to ST-27: tokens, roles, ownership,
+privacy, input validation, service keys, audit logging and the rate limit. It works against a local server
+or, with `BASE_URL` set, against the API Gateway address on Floci.
+
 ## Deployment
 
 See [Floci setup](infra/floci/README.md) for Profile and Privacy. For the standalone Search demo, the previous Vercel settings are listed below for the frontend, Search and Admin.
@@ -163,9 +204,9 @@ See [Floci setup](infra/floci/README.md) for Profile and Privacy. For the standa
 
 | Service | Owner | Status |
 |---|---|---|
-| Search, locations and contact requests | Ammar Yaser | Built; tested against Neon, Open-Meteo and the local stand-ins |
-| Profile and Privacy | Ahmed Ramadan | Built and tested independently on Floci |
-| Identity and Administration | Daniel Zerdelian | Repository contains placeholders; integration pending |
+| Search, locations and contact requests | Ammar Yaser | Built; runs locally and on Floci (Lambda behind API Gateway) |
+| Profile and Privacy | Ahmed Ramadan | Built and tested on Floci |
+| Identity, sign-up, login and Administration | Daniel Zerdelian | Built; runs on Floci (Lambda behind API Gateway) |
 
 The standalone Search demo uses `search-api/scripts/mock-services.js`. Profile and Search were also tested against an isolated copy of the team database to verify directory privacy and deactivation. See [docs/api.md](docs/api.md) for the shared HTTP contracts.
 

@@ -1,0 +1,40 @@
+### Tests against the Identity API deployed on Floci (Lambda behind API Gateway).
+### Run "npm run aws:deploy" first. If your API id is different, change it below.
+
+@baseUrl = http://localhost:4566/execute-api/daabd2aa1a/$default
+@ticket = XXXX.DUMMY.TOKEN.XXXX
+@adminToken = {{adminLogin.response.body.token}}
+
+### F1. Health through API Gateway  -> 200, "runtime": "lambda"
+### Proves: API Gateway -> Lambda
+GET {{baseUrl}}/api/health
+
+### F2. Admin logs in on Lambda  -> 200 with a token
+### Proves: Secrets Manager (TOKEN_SECRET, DATABASE_URL, Turnstile key) -> Neon
+# @name adminLogin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "{{$dotenv ADMIN_TEST_EMAIL}}", "password": "{{$dotenv ADMIN_TEST_PASSWORD}}" }
+
+### F3. Admin lists accounts on Lambda  -> 200 with "total"
+### Proves: the badge made on Lambda is accepted by Lambda, admin guard reads Neon
+GET {{baseUrl}}/api/admin/users?role=student
+Authorization: Bearer {{adminToken}}
+
+### F4. Admin area with NO badge on Lambda  -> 401 AUTH_REQUIRED
+GET {{baseUrl}}/api/admin/users
+
+### F5. Wrong password: click 6 TIMES quickly  -> 401 x5, then 429 RATE_LIMITED
+### Proves: DynamoDB (the counter lives in alumnilink-identity-ratelimit)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+X-Turnstile-Token: {{ticket}}
+
+{ "email": "nobody.floci@example.com", "password": "Wrong12345" }
+
+### F6. Internal status line on Lambda, with the service key  -> 404 USER_NOT_FOUND
+### Proves: SERVICE_KEY came from Secrets Manager too
+GET {{baseUrl}}/internal/users/11111111-1111-4111-8111-111111111111/status
+X-Service-Key: {{$dotenv SERVICE_KEY}}
