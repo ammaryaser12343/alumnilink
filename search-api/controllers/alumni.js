@@ -3,6 +3,7 @@ const alumniService = require('../services/alumniService');
 const { resolveLocation, GeocodingUnavailableError } = require('../services/geocoding');
 const { sendError } = require('../../shared/errors');
 const { applyPrivacy } = require('../services/privacy');
+const { writeAuditLog } = require('../services/auditLog');
 const { INDUSTRIES } = require('../../shared/constants');
 
 const ALLOWED_PARAMS = ['q', 'location', 'industry', 'gradYear', 'near', 'radiusKm', 'sort', 'page'];
@@ -150,10 +151,52 @@ async function getAlumnus(req, res, next) {
     }
 
     const { hiddenFields, ...profile } = row;
+    // Who viewed which profile. An admin viewing hidden fields is marked separately.
+    const isOwner = req.user.id === profile.userId;
+    const sawHidden = (hiddenFields || []).length > 0 && (isOwner || req.user.role === 'admin');
+    writeAuditLog({ actorUserId: req.user.id, action: 'VIEW_PROFILE', targetId: id, outcome: sawHidden && !isOwner ? 'admin_full_view' : 'success' });
+
     return res.status(200).json(applyPrivacy(profile, hiddenFields, req.user));
   } catch (error) {
     return next(error);
   }
 }
 
-module.exports = { searchAlumni, getAlumnus };
+// GET /api/alumni/filters?industry=
+// The options the search page offers, built only from fields owners left visible:
+// industries with counts, graduation year range, most common skills and locations.
+// With ?industry=, years, skills and locations are counted inside that industry only.
+async function getFilters(req, res, next) {
+  try {
+    for (const key of Object.keys(req.query)) {
+      if (key !== 'industry') {
+        return sendError(res, 400, 'VALIDATION_ERROR', `Unknown query parameter: ${key}.`);
+      }
+    }
+    if (req.query.industry !== undefined && typeof req.query.industry !== 'string') {
+      return sendError(res, 400, 'VALIDATION_ERROR', 'industry must be given once, as plain text.');
+    }
+    const industry = (req.query.industry || '').trim() || null;
+    if (industry && !INDUSTRIES.includes(industry)) {
+      return sendError(res, 400, 'VALIDATION_ERROR', `industry must be one of: ${INDUSTRIES.join(', ')}.`);
+    }
+
+    const options = await alumniService.getFilterOptions(industry);
+
+    // Every industry appears in the list, with 0 when nobody visible works in it.
+    const counts = new Map(options.industries.map((row) => [row.name, row.count]));
+    return res.status(200).json({
+      industry,
+      industries: INDUSTRIES.map((name) => ({ name, count: counts.get(name) || 0 })),
+      graduationYears: options.graduationYears,
+      skills: options.skills,
+      locations: options.locations,
+      sorts: SORTS,
+      maxRadiusKm: MAX_RADIUS_KM
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { searchAlumni, getAlumnus, getFilters };

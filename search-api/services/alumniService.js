@@ -121,4 +121,56 @@ async function getAlumnusById(id) {
   return rows[0] || null;
 }
 
-module.exports = { searchAlumni, getAlumnusById };
+// Filter options for the search page. Counts only active alumni, and only the
+// fields each owner left visible, so the numbers cannot reveal a hidden value.
+async function getFilterOptions(industry) {
+  const sql = getSql();
+  const rows = await sql`
+    WITH visible AS (
+      SELECT p.id, p.industry, p.location, p.graduation_year, h.fields
+      FROM alumni_profiles p
+      JOIN users u ON u.id = p.user_id
+      LEFT JOIN LATERAL (
+        SELECT COALESCE(array_agg(ps.field_name), '{}') AS fields
+        FROM privacy_settings ps
+        WHERE ps.profile_id = p.id AND ps.is_visible = FALSE
+      ) h ON TRUE
+      WHERE u.role = 'alumni' AND u.account_status = 'active' AND p.is_active = TRUE
+    ),
+    scoped AS (
+      SELECT * FROM visible
+      WHERE ${industry}::text IS NULL
+         OR (industry = ${industry} AND NOT 'industry' = ANY (fields))
+    )
+    SELECT
+      (SELECT COALESCE(json_agg(x), '[]') FROM (
+         SELECT industry AS name, COUNT(*)::int AS count
+         FROM visible
+         WHERE industry IS NOT NULL AND NOT 'industry' = ANY (fields)
+         GROUP BY industry
+       ) x) AS industries,
+      (SELECT json_build_object('min', MIN(graduation_year), 'max', MAX(graduation_year))
+       FROM scoped
+       WHERE NOT 'graduation_year' = ANY (fields)) AS "graduationYears",
+      (SELECT COALESCE(json_agg(x), '[]') FROM (
+         SELECT s.name, COUNT(*)::int AS count
+         FROM scoped v
+         JOIN alumni_skills a ON a.profile_id = v.id
+         JOIN skills s ON s.id = a.skill_id
+         WHERE NOT 'skills' = ANY (v.fields)
+         GROUP BY s.name
+         ORDER BY count DESC, s.name
+         LIMIT 20
+       ) x) AS skills,
+      (SELECT COALESCE(json_agg(x), '[]') FROM (
+         SELECT MIN(trim(location)) AS name, COUNT(*)::int AS count
+         FROM scoped
+         WHERE location IS NOT NULL AND NOT 'location' = ANY (fields)
+         GROUP BY lower(trim(location))
+         ORDER BY count DESC, name
+         LIMIT 20
+       ) x) AS locations`;
+  return rows[0];
+}
+
+module.exports = { searchAlumni, getAlumnusById, getFilterOptions };
