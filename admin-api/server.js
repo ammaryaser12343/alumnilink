@@ -1,40 +1,21 @@
-// Administration and Verification API. Owner: Daniel.
-require('dotenv').config();
+// Runs the Identity API on your computer: npm run dev
+// If SECRET_ID is set (for example with Floci running), the secrets are read
+// from Secrets Manager first; otherwise they come from .env.
+const app = require('./app');
+const { loadSecrets } = require('./services/secrets');
 
-const express = require('express');
-const cors = require('cors');
-const adminRoutes = require('./routes/admin');
-const { notFound, errorHandler } = require('../shared/errors');
-
-const app = express();
 const PORT = process.env.PORT || 3003;
 
-const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:8080')
-  .split(',')
-  .map((origin) => origin.trim());
-
-app.disable('x-powered-by');
-app.use(cors({ origin: allowedOrigins }));
-app.use(express.json({ limit: '10kb' }));
-
-app.get('/', (req, res) => {
-  res.status(200).json({
-    name: 'AlumniLink Administration API',
-    endpoints: ['/api/health', '/api/admin/verifications', '/api/admin/users/:id/status', '/api/admin/logs']
+loadSecrets()
+  .then((loaded) => {
+    if (loaded) console.log(`Secrets loaded from Secrets Manager (${process.env.SECRET_ID}).`);
+    app.listen(PORT, () => {
+      console.log(`Admin API running on http://localhost:${PORT}`);
+    });
+  })
+  .catch((error) => {
+    console.error(`Could not load secrets: ${error.message}`);
+    process.exit(1);
   });
-});
-
-app.get('/api/health', (req, res) => {
-  res.status(200).json({ status: 'ok', service: 'admin', environment: process.env.NODE_ENV || 'development' });
-});
-
-app.use('/api/admin', adminRoutes);
-
-app.use(notFound);
-app.use(errorHandler);
-
-app.listen(PORT, () => {
-  console.log(`Admin API running on http://localhost:${PORT}`);
-});
 
 module.exports = app;
