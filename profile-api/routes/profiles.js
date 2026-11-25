@@ -1,17 +1,20 @@
-const express = require('express');
-const profileController = require('../controllers/profiles');
-const { requireLogin, requireRole } = require('../../shared/auth');
+const { Router } = require("express");
+const { createProfilesController } = require("../controllers/profiles");
 
-const router = express.Router();
+function createProfilesRouter({ store, locations, requireAlumni }) {
+  const router = Router();
+  const controller = createProfilesController({ store, locations });
+  const root = "/api/profiles";
 
-// Only signed-in alumni manage profiles. The owner always comes from req.user,
-// never from an id sent by the client.
-router.use(requireLogin, requireRole('alumni'));
+  router.post(root, requireAlumni, controller.createProfile);
+  router.get(root + "/me", requireAlumni, controller.getProfile);
+  router.patch(root + "/me", requireAlumni, controller.updateProfile);
+  router.get(root + "/me/skills", requireAlumni, controller.getSkills);
+  router.put(root + "/me/skills", requireAlumni, controller.replaceSkills);
+  router.get(root + "/me/privacy", requireAlumni, controller.getPrivacy);
+  router.patch(root + "/me/privacy", requireAlumni, controller.updatePrivacy);
+  router.patch(root + "/me/status", requireAlumni, controller.updateStatus);
+  return router;
+}
 
-router.post('/', profileController.createProfile);
-router.get('/me', profileController.getMyProfile);
-router.patch('/me', profileController.updateMyProfile);
-router.patch('/me/privacy', profileController.updateMyPrivacy);
-router.patch('/me/status', profileController.updateMyStatus);
-
-module.exports = router;
+module.exports = { createProfilesRouter };

@@ -26,9 +26,13 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
 - Rate limit of 60 requests per user per minute, counted in DynamoDB
 - Runs on Floci (local AWS emulator) as a Lambda function behind API Gateway, with its secrets in Secrets Manager
 
-**Profile and Privacy, sign-up and login** (`profile-api`) and **Administration** (`admin-api`)
-- Routes, role checks and endpoint contracts are in place; the handlers are still placeholders that answer
-  `501 Not Implemented`. See [Project status](#project-status).
+**Profile and Privacy** (`profile-api`, built and tested independently)
+- Alumni profile, skills, privacy, activation and consent-checked contact access.
+- Floci deployment and temporary test-session setup are documented in [infra/floci/README.md](infra/floci/README.md).
+- Profile uses Daniel’s signed tokens, live account status and Ammar’s Locations API. Search forwards the Student token and accepted request ID for contact disclosure.
+
+**Identity and Administration** (`admin-api`)
+- Team integration is pending.
 
 ## Architecture
 
@@ -45,9 +49,8 @@ Group project for Cloud Computing and Cloud Security (26CSCN29H), Group 13.
              search-api  ->  Open-Meteo Geocoding API
 ```
 
-- Each backend is its own Vercel project, so users sign in with a signed Bearer token that every backend
-  verifies with the same `TOKEN_SECRET` (cookies do not cross the separate domains).
-- Backends talk to each other only through `/internal` routes protected by `SERVICE_KEY`; the browser never calls them.
+- All backends verify user tokens with the team’s TOKEN_SECRET. Internal calls send X-Service-Key with the shared SERVICE_KEY.
+- Profile verifies the original Student token and exact accepted request before releasing contact email.
 - Each backend follows the same layers: `routes/` → `controllers/` (validation, responses) → `services/` (database and external calls).
 - Errors always use one format: `{ "error": { "code": "...", "message": "..." } }`.
 
@@ -61,8 +64,9 @@ The full endpoint contract, including the internal calls, is in [`docs/api.md`](
 | Backend | Node.js 18+, Express, `cors`, `dotenv` |
 | Database | Neon serverless PostgreSQL (`@neondatabase/serverless`) |
 | External API | Open-Meteo Geocoding (free, no API key) |
-| Hosting | Vercel (four projects from one repository) |
+| Hosting | Floci (local AWS emulator) for all three backends; Vercel settings kept below as a fallback |
 | AWS (Search API) | Floci emulator: API Gateway, Lambda, Secrets Manager, DynamoDB, CloudWatch Logs, IAM; AWS SDK for JavaScript v3, `serverless-http` |
+| AWS (Profile, Admin) | See [infra/floci/README.md](infra/floci/README.md) and `admin-api/aws/` |
 | Testing | VS Code REST Client or Postman (`search-api/requests.http`) |
 
 ## Project structure
@@ -70,7 +74,7 @@ The full endpoint contract, including the internal calls, is in [`docs/api.md`](
 ```
 alumnilink/
 ├── frontend/       Web pages: search with near-me, contact requests
-├── profile-api/    Profile, privacy, sign-up and login backend (placeholder handlers)
+├── profile-api/    Profile, skills, privacy and contact disclosure backend
 ├── search-api/     Search, locations and contact requests backend
 │   ├── app.js        Express app; server.js runs it locally, lambda.js on AWS Lambda
 │   ├── controllers/  middleware/  routes/  services/
@@ -184,13 +188,12 @@ or, with `BASE_URL` set, against the API Gateway address on Floci.
 
 ## Deployment
 
-Import the repository into Vercel once per service, changing only the **Root Directory**:
+See [Floci setup](infra/floci/README.md) for Profile and Privacy. For the standalone Search demo, the previous Vercel settings are listed below for the frontend, Search and Admin.
 
 | Vercel project | Root Directory | Environment variables |
 |---|---|---|
 | Frontend | `frontend` | none |
 | Search API | `search-api` | `DATABASE_URL`, `TOKEN_SECRET`, `SERVICE_KEY`, `IDENTITY_API_URL`, `PROFILE_API_URL`, `CORS_ORIGINS` |
-| Profile API | `profile-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS`, `TURNSTILE_SECRET_KEY` |
 | Admin API | `admin-api` | `DATABASE_URL`, `TOKEN_SECRET`, `CORS_ORIGINS` |
 
 - `CORS_ORIGINS` is a comma-separated list such as `http://localhost:8080,https://your-frontend.vercel.app`.
@@ -202,11 +205,10 @@ Import the repository into Vercel once per service, changing only the **Root Dir
 | Service | Owner | Status |
 |---|---|---|
 | Search, locations and contact requests | Ammar Yaser | Built; runs locally and on Floci (Lambda behind API Gateway) |
-| Profile, privacy, sign-up and login | Ahmed Ramadan | Routes in place; handlers to be built |
-| Administration and verification | Daniel Zerdelian | Routes in place; handlers to be built |
+| Profile and Privacy | Ahmed Ramadan | Built and tested on Floci |
+| Identity, sign-up, login and Administration | Daniel Zerdelian | Built; runs on Floci (Lambda behind API Gateway) |
 
-Until the Identity and Profile services provide their `/internal` endpoints, `search-api/scripts/mock-services.js`
-stands in for them locally with the same request and response formats.
+The standalone Search demo uses `search-api/scripts/mock-services.js`. Profile and Search were also tested against an isolated copy of the team database to verify directory privacy and deactivation. See [docs/api.md](docs/api.md) for the shared HTTP contracts.
 
 ## Contributing
 

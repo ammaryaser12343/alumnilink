@@ -65,12 +65,13 @@ async function listContactRequests(req, res, next) {
     }
 
     const sent = await service.listSentByStudent(req.user.id);
+    const userToken = req.get('Authorization').slice('Bearer '.length).trim();
     // For accepted requests, ask the Profile service for the alum's contact email.
     // If Profile is down, the list still loads and the email is marked unavailable.
     const requests = await Promise.all(sent.map(async (request) => {
       if (request.status !== 'accepted') return request;
       try {
-        return { ...request, contactEmail: await getProfileContact(request.alumniId) };
+        return { ...request, contactEmail: await getProfileContact(request.alumniId, request.id, userToken) };
       } catch (error) {
         if (!(error instanceof ServiceUnavailableError)) throw error;
         console.error(error.message);

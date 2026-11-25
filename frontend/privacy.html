@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Your directory privacy | AlumniLink</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link rel="stylesheet" href="css/profile.css" />
+    <script defer src="js/config.js"></script>
+    <script defer src="js/profile-config.js"></script>
+    <script defer src="js/profile-client.js"></script>
+    <script defer src="js/privacy.js"></script>
+  </head>
+  <body>
+    <header class="site-header">
+      <h1>AlumniLink</h1>
+      <nav aria-label="Main">
+        <a href="index.html">Search</a>
+        <a href="requests.html">Contact requests</a>
+        <a href="profile.html">My profile</a>
+        <a href="privacy.html" aria-current="page">Privacy</a>
+        <button id="logout" type="button">Sign out</button>
+      </nav>
+    </header>
+    <main class="profile-main">
+      <h2>Your directory privacy</h2>
+      <p id="status" role="status" aria-live="polite"></p>
+      <p>
+        Choose the fields people can see and search in the alumni directory.
+        Contact email is shared through accepted contact requests.
+      </p>
+      <form class="profile-form" id="privacy" hidden>
+        <fieldset>
+          <legend>Visible directory fields</legend>
+          <label class="choice"
+            ><input type="checkbox" name="graduation_year" />Graduation
+            year</label
+          >
+          <label class="choice"
+            ><input type="checkbox" name="company" />Company</label
+          >
+          <label class="choice"
+            ><input type="checkbox" name="location" />Location</label
+          >
+          <label class="choice"
+            ><input type="checkbox" name="industry" />Industry</label
+          >
+          <label class="choice"><input type="checkbox" name="bio" />Bio</label>
+          <label class="choice"
+            ><input type="checkbox" name="skills" />Skills</label
+          >
+        </fieldset>
+        <button type="submit">Save privacy choices</button>
+      </form>
+    </main>
+  </body>
+</html>
