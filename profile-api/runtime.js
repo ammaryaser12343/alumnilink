@@ -1,11 +1,10 @@
 const { createDatabase } = require("./services/db");
-const { createApp } = require("./app");
 const { createStore } = require("./services/profileStore");
 const { createServiceClient } = require("./services/serviceClient");
 
-function createRuntimeApp(env = process.env) {
+function createRuntimeOptions(env = process.env) {
   const db = createDatabase(env);
-  return createApp({
+  return {
     store: createStore(db),
     identity: createServiceClient({
       baseUrl: env.IDENTITY_API_URL,
@@ -21,6 +20,6 @@ function createRuntimeApp(env = process.env) {
       serviceKey: env.SERVICE_KEY,
       frontendOrigin: env.FRONTEND_ORIGIN,
     },
-  });
+  };
 }
-module.exports = { createRuntimeApp };
+module.exports = { createRuntimeOptions };
