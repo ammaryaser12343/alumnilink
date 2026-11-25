@@ -432,6 +432,17 @@ test("legacy array skills migrate once and preserve existing profile data", asyn
   }
 });
 
+test("Express deployment entry serves health and keeps profile routes protected", async (t) => {
+  const app = require("../app");
+  const url = await serve(app, t);
+  const health = await fetch(url + "/api/health");
+  assert.equal(health.status, 200);
+  assert.deepEqual(await health.json(), { service: "profile-and-privacy", status: "ok" });
+  const protectedProfile = await fetch(url + "/api/profiles/me");
+  assert.equal(protectedProfile.status, 401);
+  assert.equal((await protectedProfile.json()).error.code, "AUTH_REQUIRED");
+});
+
 test("Lambda retains JSON parsing and body limits", async () => {
   const { handler } = require("../lambda");
   const event = {

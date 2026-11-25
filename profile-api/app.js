@@ -5,6 +5,7 @@ const { createProfilesRouter } = require("./routes/profiles");
 const { createInternalRouter } = require("./routes/internal");
 const { createActiveAccountCheck, createAlumniAccess } = require("./middleware/activeAccount");
 const { ApiError } = require("./errors");
+const { createRuntimeOptions } = require("./runtime");
 
 function createApp({
   store,
@@ -105,4 +106,5 @@ function createApp({
   });
   return app;
 }
-module.exports = { createApp };
+module.exports = createApp(createRuntimeOptions());
+module.exports.createApp = createApp;
