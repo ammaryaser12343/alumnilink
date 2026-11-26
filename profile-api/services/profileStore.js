@@ -167,7 +167,8 @@ function createStore(db) {
         JOIN users sender ON sender.id=r.student_user_id
         JOIN users recipient ON recipient.id=p.user_id
         WHERE p.id=$1 AND r.id=$2 AND r.student_user_id=$3 AND r.status='accepted' AND p.is_active
-        AND sender.role='student' AND sender.account_status='active'
+        AND sender.role IN ('student','alumni') AND sender.account_status='active'
+        AND sender.id <> recipient.id
         AND recipient.role='alumni' AND recipient.account_status='active'`,
         [profileId, requestId, senderId],
       );

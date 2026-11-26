@@ -64,7 +64,7 @@
       "path": "/internal/profiles/:id/contact?requestId=:requestId",
       "headers": {
         "X-Service-Key": "SERVICE_KEY",
-        "X-User-Token": "Student's original signed user token, verified independently",
+        "X-User-Token": "Sender's original signed user token, verified independently",
         "X-Request-Id": "Optional UUID propagated into logs"
       },
       "response": {
@@ -73,9 +73,10 @@
       },
       "checks": [
         "valid service credential",
-        "valid delegated Student token",
-        "current Student active via Identity",
+        "valid delegated Student or Alumni token",
+        "current sender role and active status verified via Identity",
         "contact_requests.student_user_id matches token sub",
+        "sender and recipient are different accounts",
         "contact_requests.alumni_profile_id matches path",
         "contact_requests.status is accepted",
         "profile is_active true",

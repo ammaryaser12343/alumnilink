@@ -343,6 +343,35 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
       );
     },
   );
+  await t.test("an Alumni sender can reveal accepted contact details for another Alum", async () => {
+    const requestId = randomUUID();
+    await db.query(
+      "INSERT INTO contact_requests(id,student_user_id,alumni_profile_id) VALUES($1,$2,$3)",
+      [requestId, userIds.other, profileId],
+    );
+    assert.equal((await contact("other", profileId, requestId)).status, 403);
+
+    await db.query("UPDATE contact_requests SET status='accepted' WHERE id=$1", [
+      requestId,
+    ]);
+    const result = await contact("other", profileId, requestId);
+    assert.equal(result.status, 200);
+    assert.deepEqual(result.body, { profileId, contactEmail: "alumni@example.test" });
+    assert.equal((await contact("alumni", profileId, requestId)).status, 403);
+    assert.equal((await contact("student", profileId, requestId)).status, 403);
+
+    const selfRequestId = randomUUID();
+    await db.query(
+      "INSERT INTO contact_requests(id,student_user_id,alumni_profile_id,status) VALUES($1,$2,$3,'accepted')",
+      [selfRequestId, userIds.alumni, profileId],
+    );
+    assert.equal((await contact("alumni", profileId, selfRequestId)).status, 403);
+
+    await db.query("UPDATE users SET account_status='suspended' WHERE id=$1", [
+      userIds.other,
+    ]);
+    assert.equal((await contact("other", profileId, requestId)).status, 403);
+  });
   await t.test(
     "deactivation and current account suspension block contact",
     async () => {
