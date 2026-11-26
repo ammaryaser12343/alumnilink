@@ -1,7 +1,8 @@
 // Cloudflare Turnstile ("Verify you are human") for the sign-up and login pages. Owner: Daniel.
-// The SITE key is public and is meant to be in the page. The SECRET key is only in admin-api/.env.
+// The SITE key is public and is meant to be in the page. The SECRET key is never in the code:
+// it is in admin-api/.env locally and in the backend's environment variables when deployed.
 // Locally we use Cloudflare's test site key, which always passes (Lab 5).
-const TURNSTILE_SITE_KEY = isLocal ? '1x00000000000000000000AA' : 'YOUR-TURNSTILE-SITE-KEY';
+const TURNSTILE_SITE_KEY = isLocal ? '1x00000000000000000000AA' : '0x4AAAAAAGUCqTTxt6xiFVrY';
 
 let turnstileWidgetId = null;
 
