@@ -1,5 +1,11 @@
 const { request, message } = window.profileClient;
 const form = document.getElementById("privacy");
+const fields = [...form.querySelectorAll('input[type="checkbox"]')];
+
+document.getElementById("select-all-privacy").addEventListener("click", () => {
+  for (const field of fields) field.checked = true;
+});
+
 (async () => {
   try {
     const { privacy } = await request("/api/profiles/me/privacy");
@@ -15,7 +21,7 @@ form.addEventListener("submit", async (event) => {
   const submit = form.querySelector('[type="submit"]');
   submit.disabled = true;
   const choices = Object.fromEntries(
-    [...form.querySelectorAll('input[type="checkbox"]')].map((input) => [
+    fields.map((input) => [
       input.name,
       input.checked,
     ]),
