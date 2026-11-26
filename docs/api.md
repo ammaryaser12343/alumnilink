@@ -42,7 +42,7 @@ function behind API Gateway; the routes and answers are the same.
 
 | Method | Endpoint | Purpose | Success | Errors | Roles |
 |---|---|---|---|---|---|
-| GET | /api/alumni | Search, filter, near-me, sort, paginate | 200 | 400, 401, 403, 429, 503 | Alumni, Student, Admin |
+| GET | /api/alumni | Search, filter, near-me, sort, paginate. Cards respect field visibility for everyone except admins. | 200 | 400, 401, 403, 429, 503 | Alumni, Student, Admin |
 | GET | /api/alumni/filters | Filter options built from visible data only | 200 | 400, 401, 403, 429, 503 | Alumni, Student, Admin |
 | GET | /api/alumni/:id | Visible fields of one profile (owner and admin also see hidden ones) | 200 | 401, 403, 404, 429, 503 | Alumni, Student, Admin |
 | POST | /api/contact-requests | Ask an alum for contact details | 201 | 400, 401, 403, 404, 409, 413, 429, 503 | Student |

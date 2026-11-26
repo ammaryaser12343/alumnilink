@@ -119,7 +119,10 @@ async function searchAlumni(req, res, next) {
     }
 
     const { rows, total } = await alumniService.searchAlumni(filters);
-    const results = rows.map(({ hiddenFields, ...profile }) => cleanResult(applyPrivacy(profile, hiddenFields, req.user)));
+    const showHidden = req.user.role === 'admin';
+    const results = rows.map(({ hiddenFields, ...profile }) =>
+      cleanResult(applyPrivacy(profile, hiddenFields, showHidden))
+    );
 
     // An empty result is still a successful search: 200 with an empty list.
     const body = { page: filters.page, pageSize: filters.pageSize, total, results };
@@ -153,10 +156,11 @@ async function getAlumnus(req, res, next) {
     const { hiddenFields, ...profile } = row;
     // Who viewed which profile. An admin viewing hidden fields is marked separately.
     const isOwner = req.user.id === profile.userId;
-    const sawHidden = (hiddenFields || []).length > 0 && (isOwner || req.user.role === 'admin');
+    const showHidden = isOwner || req.user.role === 'admin';
+    const sawHidden = (hiddenFields || []).length > 0 && showHidden;
     writeAuditLog({ actorUserId: req.user.id, action: 'VIEW_PROFILE', targetId: id, outcome: sawHidden && !isOwner ? 'admin_full_view' : 'success' });
 
-    return res.status(200).json(applyPrivacy(profile, hiddenFields, req.user));
+    return res.status(200).json(applyPrivacy(profile, hiddenFields, showHidden));
   } catch (error) {
     return next(error);
   }
