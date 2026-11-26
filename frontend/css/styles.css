@@ -1,37 +1,318 @@
+/* AlumniLink shared stylesheet, loaded by every page.
+   Look: a clean professional-network style. White header, light grey page,
+   white cards, one blue for every action.
+   Fonts: Outfit for headings, Work Sans for text. The font files are in
+   frontend/fonts (SIL Open Font License), so the strict Content-Security-Policy
+   in vercel.json still allows them. If they fail to load, system fonts are used. */
+
+@font-face { font-family: 'Outfit'; font-weight: 600; font-display: swap; src: url('../fonts/outfit-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Outfit'; font-weight: 700; font-display: swap; src: url('../fonts/outfit-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Work Sans'; font-weight: 400; font-display: swap; src: url('../fonts/work-sans-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Work Sans'; font-weight: 500; font-display: swap; src: url('../fonts/work-sans-latin-500-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Work Sans'; font-weight: 600; font-display: swap; src: url('../fonts/work-sans-latin-600-normal.woff2') format('woff2'); }
+
+/* ---------- 1. Colours and sizes in one place ---------- */
+/* identity.css and profile.css use these names too, so the whole site changes together. */
+:root {
+  color-scheme: light;
+  --blue: #0369a1;          /* the one action colour: buttons, links, current tab */
+  --blue-dark: #075985;     /* hover */
+  --blue-soft: #e0f2fe;     /* light blue fills */
+  --ink: #0f172a;           /* headings */
+  --text: #1e293b;          /* normal text */
+  --muted: #475569;         /* secondary text, 7:1 contrast on white */
+  --bg: #f1f5f9;            /* page background (light grey) */
+  --card: #ffffff;
+  --border: #e2e8f0;        /* card borders */
+  --field: #cbd5e1;         /* form field borders */
+  --soft: #f1f5f9;          /* table headers, grey buttons */
+  --good-bg: #dcfce7;  --good: #166534;
+  --bad-bg: #fee2e2;   --bad: #991b1b;
+  --wait-bg: #fef3c7;  --wait: #854d0e;
+  --radius: 10px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-hover: 0 6px 20px rgba(15, 23, 42, 0.08);
+  --font-body: 'Work Sans', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+  --font-head: 'Outfit', system-ui, -apple-system, 'Segoe UI', Arial, sans-serif;
+}
+
+/* ---------- 2. Base ---------- */
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color: #1f2933; background: #f5f7fa; line-height: 1.5; }
-.site-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 1rem 1.25rem; background: #17365d; color: #fff; }
-.site-header h1 { margin: 0; font-size: 1.4rem; }
-.site-header nav { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; }
-.site-header nav a { color: #fff; text-decoration: none; }
-.site-header nav a:focus-visible, .site-header nav button:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
-.site-header nav a[aria-current="page"] { text-decoration: underline; }
-main { max-width: 1000px; margin: 0 auto; padding: 1.25rem; }
-.search-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem; align-items: end; background: #fff; padding: 1rem; border-radius: 8px; border: 1px solid #d9e2ec; }
-.search-form label { display: flex; flex-direction: column; font-size: 0.9rem; font-weight: 600; gap: 0.25rem; }
-.search-form input, .search-form select { font: inherit; font-weight: 400; padding: 0.45rem 0.5rem; border: 1px solid #bcccdc; border-radius: 6px; }
-button { font: inherit; padding: 0.5rem 1rem; border: 0; border-radius: 6px; background: #17365d; color: #fff; cursor: pointer; }
-button:disabled { background: #9fb3c8; cursor: not-allowed; }
-.message { min-height: 1.5rem; margin: 1rem 0 0.5rem; }
-.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 0.75rem; }
-.result-card { background: #fff; border: 1px solid #d9e2ec; border-radius: 8px; padding: 0.9rem 1rem; }
-.result-card h3 { margin: 0 0 0.4rem; font-size: 1.1rem; color: #17365d; }
-.result-card p { margin: 0.2rem 0; font-size: 0.92rem; }
-.pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 1.25rem 0; }
-.contact-button { margin-top: 0.6rem; font-size: 0.9rem; padding: 0.4rem 0.8rem; }
-button.secondary { background: #e4e7eb; color: #1f2933; }
-dialog { border: 1px solid #d9e2ec; border-radius: 8px; padding: 1.25rem; max-width: 480px; width: calc(100% - 2rem); }
-dialog::backdrop { background: rgba(15, 30, 50, 0.45); }
-dialog h3 { margin-top: 0; color: #17365d; }
-dialog label { display: block; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.25rem; }
-textarea { width: 100%; font: inherit; padding: 0.5rem; border: 1px solid #bcccdc; border-radius: 6px; resize: vertical; }
-.dialog-buttons { display: flex; justify-content: flex-end; gap: 0.5rem; }
-.request-list { display: grid; gap: 0.75rem; padding: 0; list-style: none; }
-.request-card { background: #fff; border: 1px solid #d9e2ec; border-radius: 8px; padding: 0.9rem 1rem; }
-.request-card h3 { margin: 0 0 0.3rem; font-size: 1.05rem; color: #17365d; }
-.request-card p { margin: 0.25rem 0; font-size: 0.92rem; }
-.request-card .actions { display: flex; gap: 0.5rem; margin-top: 0.6rem; }
-.status { display: inline-block; font-size: 0.8rem; font-weight: 600; padding: 0.1rem 0.5rem; border-radius: 999px; background: #e4e7eb; }
-.status-accepted { background: #d5f5e3; color: #1d6b3f; }
-.status-declined { background: #fde2e1; color: #8a1c1c; }
-.status-pending { background: #fff3c4; color: #7a5b00; }
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.55;
+  color: var(--text);
+  background: var(--bg);
+}
+
+h1, h2, h3 { font-family: var(--font-head); line-height: 1.2; color: var(--ink); font-weight: 600; }
+h2 { font-size: 1.9rem; margin: 0 0 0.35rem; }
+
+a { color: var(--blue); }
+
+/* One visible focus ring for keyboard users on every control */
+:focus-visible { outline: 3px solid var(--blue); outline-offset: 2px; }
+
+/* ---------- 3. Header and navigation ---------- */
+.site-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 1.5rem;
+  padding: 0 clamp(1rem, 4vw, 2.5rem);
+  background: var(--card);
+  color: var(--ink);
+  border-bottom: 1px solid var(--border);
+}
+
+.site-header h1 {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0.7rem 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+/* Logo mark drawn in CSS, so every page gets it without extra HTML */
+.site-header h1::before {
+  content: 'A';
+  display: grid;
+  place-items: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 8px;
+  background: var(--blue);
+  font-size: 1.2rem;
+  color: #fff;
+}
+
+.site-header nav { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.25rem; align-self: stretch; }
+
+/* Tabs: grey text; the current page gets blue text and a blue bar underneath */
+.site-header nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 56px;
+  padding: 0 0.9rem;
+  border-bottom: 3px solid transparent;
+  color: var(--muted);
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.site-header nav a:hover { color: var(--ink); }
+.site-header nav a[aria-current="page"] { color: var(--blue); border-bottom-color: var(--blue); font-weight: 600; }
+
+.site-header nav button { align-self: center; margin-left: 0.5rem; }
+
+/* ---------- 4. Page layout ---------- */
+main { max-width: 1280px; margin: 0 auto; padding: 2rem clamp(1rem, 4vw, 2.5rem) 3rem; }
+
+.page-intro { margin: 0 0 1.5rem; max-width: 62ch; color: var(--muted); }
+
+/* ---------- 5. Buttons and form fields ---------- */
+/* Pill buttons: blue filled for the main action, outlined for the rest */
+button {
+  min-height: 44px;              /* big enough to tap on a phone */
+  padding: 0 1.4rem;
+  font: inherit;
+  font-weight: 600;
+  border: 1px solid var(--blue);
+  border-radius: 999px;
+  background: var(--blue);
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.2s, color 0.2s, border-color 0.2s;
+}
+
+button:hover { background: var(--blue-dark); border-color: var(--blue-dark); }
+button:disabled { background: var(--field); border-color: var(--field); color: var(--muted); cursor: not-allowed; }
+
+button.secondary, .site-header nav button { background: transparent; color: var(--blue); }
+button.secondary:hover, .site-header nav button:hover { background: var(--blue-soft); }
+
+input, select, textarea {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.55rem 0.8rem;
+  font: inherit;
+  font-weight: 400;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--field);
+  border-radius: 8px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+input[type="checkbox"] { width: auto; min-height: 0; }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(3, 105, 161, 0.18);
+}
+
+textarea { resize: vertical; }
+
+/* ---------- 6. Search page: filters sidebar + results ---------- */
+.search-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;   /* sidebar, then the results */
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* The sidebar stays in view while the results scroll (the header is about 57px tall) */
+.filters { position: sticky; top: 73px; }
+.filters h3 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+
+.results-column { min-width: 0; }
+.results-column .message { margin-top: 0; }
+
+/* ---------- 7. Search form ---------- */
+.search-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 1rem;
+  align-items: end;
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* In the sidebar the fields stack in one column */
+.filters .search-form { grid-template-columns: 1fr; }
+
+.search-form label { display: flex; flex-direction: column; gap: 0.35rem; font-size: 0.875rem; font-weight: 600; color: var(--text); }
+.search-form button { width: 100%; }
+
+/* Status line ("6 alumni found.") */
+.message { min-height: 1.5rem; margin: 1.5rem 0 1rem; color: var(--muted); font-weight: 500; }
+.message:empty { min-height: 0; margin: 0.5rem 0; }
+
+/* Narrower screens: the sidebar goes back on top of the results */
+@media (max-width: 900px) {
+  .search-layout { grid-template-columns: 1fr; }
+  .filters { position: static; }
+  .filters .search-form { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+}
+
+/* ---------- 8. Result cards (profile-card style) ---------- */
+.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+
+.result-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 0 1.25rem 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  transition: box-shadow 0.2s;
+}
+
+.result-card:hover { box-shadow: var(--shadow-hover); }
+
+/* Soft blue banner across the top of each card */
+.result-card::before {
+  content: '';
+  display: block;
+  height: 56px;
+  margin: 0 -1.25rem;
+  background: linear-gradient(120deg, #bae6fd, #e0f2fe);
+}
+
+.result-card h3 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+
+/* Round avatar sitting on the banner: a generic person icon, since there are no photos */
+.result-card h3::before {
+  content: '';
+  display: block;
+  width: 64px;
+  height: 64px;
+  margin: -32px 0 0.6rem;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #e2e8f0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z'/%3E%3C/svg%3E") center 60% / 70% no-repeat;
+}
+
+.result-card p { margin: 0.2rem 0; font-size: 0.925rem; }
+
+/* The small labels ("Company:", "Skills:") written by the JavaScript */
+.result-card strong, .request-card strong { font-weight: 600; color: var(--muted); }
+
+/* Pushes the button to the bottom so the buttons line up across cards */
+.result-card .contact-button { margin-top: auto; width: 100%; background: transparent; color: var(--blue); }
+.result-card .contact-button:hover { background: var(--blue-soft); }
+.result-card p:last-of-type { margin-bottom: 1rem; }
+
+/* ---------- 9. Pager ---------- */
+.pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 2rem 0 0; color: var(--muted); }
+
+/* ---------- 10. Contact dialog ---------- */
+dialog {
+  width: calc(100% - 2rem);
+  max-width: 500px;
+  padding: 1.75rem;
+  border: 0;
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+}
+
+dialog::backdrop { background: rgba(15, 23, 42, 0.5); }
+dialog h3 { margin-top: 0; font-size: 1.35rem; }
+dialog label { display: block; margin-bottom: 0.35rem; font-weight: 600; font-size: 0.875rem; }
+dialog .message { margin: 0.75rem 0; font-weight: 400; }
+.dialog-buttons { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
+
+/* ---------- 11. Contact requests page ---------- */
+#intro { margin: 0 0 1rem; max-width: 62ch; color: var(--muted); }
+
+.request-list { display: grid; gap: 1rem; padding: 0; margin: 0; list-style: none; }
+
+.request-card {
+  padding: 1.25rem 1.4rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.request-card h3 { margin: 0 0 0.45rem; font-size: 1.2rem; }
+.request-card p { margin: 0.3rem 0; font-size: 0.95rem; }
+.request-card .actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+
+/* Status badges. Each has a word as well as a colour, so colour is never the only signal. */
+.status { display: inline-block; padding: 0.15rem 0.7rem; border-radius: 999px; font-size: 0.8rem; font-weight: 600; background: var(--border); color: var(--text); }
+.status-accepted { background: var(--good-bg); color: var(--good); }
+.status-declined { background: var(--bad-bg); color: var(--bad); }
+.status-pending  { background: var(--wait-bg); color: var(--wait); }
+
+/* ---------- 12. Phones ---------- */
+@media (max-width: 600px) {
+  h2 { font-size: 1.55rem; }
+  /* Tabs stay on one line; if they do not fit, the tab row (not the page) scrolls sideways */
+  .site-header nav { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .site-header nav a { flex-shrink: 0; min-height: 48px; padding: 0 0.45rem; font-size: 0.88rem; }
+  .search-form { padding: 1rem; }
+  .dialog-buttons button { flex: 1; }
+}
+
+/* People who ask their system for less motion get none */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}

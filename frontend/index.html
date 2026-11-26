@@ -20,7 +20,13 @@
   <main>
     <section aria-labelledby="search-heading">
       <h2 id="search-heading">Search the alumni directory</h2>
+      <p class="page-intro">Find graduates by name, skill, industry or graduation year, or see who works near a city.
+        Each alum decides which details are shown.</p>
 
+      <!-- Two columns on wide screens: filters on the left, results on the right -->
+      <div class="search-layout">
+      <aside class="filters" aria-labelledby="filters-heading">
+      <h3 id="filters-heading">Filters</h3>
       <form id="search-form" class="search-form" novalidate>
         <label>Name or skill
           <input type="text" id="q" name="q" maxlength="50" placeholder="e.g. python or Omar">
@@ -60,9 +66,19 @@
         </label>
         <button type="submit">Search</button>
       </form>
+      </aside>
 
+      <div class="results-column">
       <p id="message" class="message" role="status" aria-live="polite"></p>
       <div id="results" class="results"></div>
+
+      <nav class="pager" aria-label="Result pages">
+        <button type="button" id="prev-page" disabled>Previous</button>
+        <span id="page-info"></span>
+        <button type="button" id="next-page" disabled>Next</button>
+      </nav>
+      </div>
+      </div>
 
       <dialog id="contact-dialog" aria-labelledby="contact-heading">
         <form id="contact-form" method="dialog" novalidate>
@@ -76,12 +92,6 @@
           </div>
         </form>
       </dialog>
-
-      <nav class="pager" aria-label="Result pages">
-        <button type="button" id="prev-page" disabled>Previous</button>
-        <span id="page-info"></span>
-        <button type="button" id="next-page" disabled>Next</button>
-      </nav>
     </section>
   </main>
 

@@ -1,14 +1,15 @@
 .site-header #logout {
-  border: 1px solid #bcccdc;
+  border: 1px solid var(--blue);
 }
 .profile-main {
   max-width: 48rem;
 }
 .profile-form {
-  padding: 1rem;
-  background: #fff;
-  border: 1px solid #d9e2ec;
-  border-radius: 8px;
+  padding: 1.5rem;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
 }
 .profile-form label {
   display: grid;
@@ -19,16 +20,17 @@
 .profile-form input:not([type="checkbox"]) {
   width: 100%;
   font: inherit;
+  font-weight: 400;
   color: inherit;
-  padding: .45rem .5rem;
-  border: 1px solid #bcccdc;
-  border-radius: 6px;
+  padding: .55rem .8rem;
+  border: 1px solid var(--field);
+  border-radius: 8px;
 }
 .profile-form input[type="checkbox"] {
   width: 1.15rem;
   height: 1.15rem;
   margin: 0;
-  accent-color: #17365d;
+  accent-color: var(--blue);
 }
 .profile-form .actions {
   display: flex;
@@ -39,10 +41,11 @@
 .profile-form .help {
   margin: .3rem 0 .8rem;
   font-size: .9rem;
-  color: #52667b;
+  color: var(--muted);
 }
 .profile-form fieldset {
-  border: 1px solid #d9e2ec;
+  border: 1px solid var(--border);
+  border-radius: 8px;
   padding: 0 1rem .75rem;
   margin: 0 0 1rem;
 }
@@ -52,11 +55,12 @@
   gap: .65rem;
 }
 .profile-main #status:not(:empty) {
-  border-left: 4px solid #367963;
-  background: #e4f4ed;
+  border-left: 4px solid var(--good);
+  background: var(--good-bg);
+  border-radius: 6px;
   padding: .7rem;
 }
 .profile-main #status.error {
-  border-color: #a13a28;
-  background: #fff0ed;
+  border-color: var(--bad);
+  background: var(--bad-bg);
 }
