@@ -283,6 +283,8 @@ dialog .message { margin: 0.75rem 0; font-weight: 400; }
 #intro { margin: 0 0 1rem; max-width: 62ch; color: var(--muted); }
 
 .request-list { display: grid; gap: 1rem; padding: 0; margin: 0; list-style: none; }
+.list-heading { margin: 1.5rem 0 0.75rem; font-size: 1.15rem; }
+.list-heading:first-of-type { margin-top: 0.5rem; }
 
 .request-card {
   padding: 1.25rem 1.4rem;

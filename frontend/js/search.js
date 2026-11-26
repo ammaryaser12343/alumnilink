@@ -70,8 +70,8 @@ function renderResults(results) {
     }
     addLine(card, 'About', alumnus.bio);
 
-    // Only students can ask alumni for contact details.
-    if (user && user.role === 'student') {
+    // Students and alumni can ask an alum for contact details, but not on their own card.
+    if (user && (user.role === 'student' || user.role === 'alumni') && !alumnus.isMine) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'contact-button';

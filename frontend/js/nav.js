@@ -25,6 +25,11 @@ document.addEventListener('DOMContentLoaded', () => {
     return;
   }
 
+  // Students have no profile, so My profile and Privacy are hidden for them.
+  if (role === 'student') {
+    nav.querySelectorAll('a[href="profile.html"], a[href="privacy.html"]').forEach((link) => { link.hidden = true; });
+  }
+
   if (role === 'admin' && !nav.querySelector('a[href="admin.html"]')) {
     const admin = document.createElement('a');
     admin.href = 'admin.html';

@@ -120,9 +120,12 @@ async function searchAlumni(req, res, next) {
 
     const { rows, total } = await alumniService.searchAlumni(filters);
     const showHidden = req.user.role === 'admin';
-    const results = rows.map(({ hiddenFields, ...profile }) =>
-      cleanResult(applyPrivacy(profile, hiddenFields, showHidden))
-    );
+    // isMine marks the caller's own card, so the page does not offer "Request contact" on it.
+    const results = rows.map(({ hiddenFields, ...profile }) => {
+      const result = cleanResult(applyPrivacy(profile, hiddenFields, showHidden));
+      if (profile.userId === req.user.id) result.isMine = true;
+      return result;
+    });
 
     // An empty result is still a successful search: 200 with an empty list.
     const body = { page: filters.page, pageSize: filters.pageSize, total, results };
