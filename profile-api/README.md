@@ -44,7 +44,7 @@ Profile JSON uses graduationYear, company, industry, bio, contactEmail, location
 
 All public profile operations require an active Alumni account. The backend derives ownership from the verified token. Profile writes and related skill changes use one SQL transaction on a single database client. Location resolution occurs before that transaction. A failed lookup preserves the previous profile.
 
-The contact endpoint checks the shared X-Service-Key header and verifies the Student's original token from X-User-Token. The database checks the accepted request's sender and target, current account eligibility and profile activity. Responses and logs exclude contact email except for the permitted contact response.
+The contact endpoint checks the shared X-Service-Key header and verifies the original Student or Alumni sender token from X-User-Token. The database checks the accepted request's sender and target, current account eligibility and profile activity, and requires the sender and recipient to be different accounts. Responses and logs exclude contact email except for the permitted contact response.
 
 ## Database migration
 

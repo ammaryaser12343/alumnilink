@@ -5,15 +5,15 @@ const validate = require("../validation");
 function createContactController({ store, identity, requireActiveAccount }) {
   return async function getContact(req, res) {
     const claims = verifyUser(req.get("X-User-Token"));
-    if (claims.role !== "student")
+    if (claims.role !== "student" && claims.role !== "alumni")
       throw new ApiError(
         403,
-        "STUDENT_REQUIRED",
-        "Only a Student may reveal accepted contact details.",
+        "CONTACT_SENDER_REQUIRED",
+        "Only a Student or an Alum may reveal accepted contact details.",
       );
     const profileId = validate.id(req.params.id);
     const requestId = validate.id(req.query.requestId);
-    await requireActiveAccount(claims, "student", req.requestId);
+    await requireActiveAccount(claims, claims.role, req.requestId);
     const context = await store.contactContext(
       profileId,
       requestId,
