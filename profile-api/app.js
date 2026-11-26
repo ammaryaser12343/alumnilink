@@ -52,6 +52,19 @@ function createApp({
       }),
     );
   app.use(express.json({ limit: "16kb" }));
+  app.get("/", (_req, res) =>
+    res.json({
+      name: "AlumniLink Profile and Privacy API",
+      endpoints: [
+        "/api/health",
+        "/api/profiles",
+        "/api/profiles/me",
+        "/api/profiles/me/skills",
+        "/api/profiles/me/privacy",
+        "/api/profiles/me/status",
+      ],
+    }),
+  );
   app.get("/api/health", (_req, res) =>
     res.json({ service: "profile-and-privacy", status: "ok" }),
   );
