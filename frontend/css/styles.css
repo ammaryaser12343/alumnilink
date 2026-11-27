@@ -169,11 +169,15 @@ textarea { resize: vertical; }
   border: 1px solid #bae6fd;
 }
 .search-hero h2 { margin-bottom: 0.25rem; }
+/* When a tag click scrolls back up, stop below the sticky header */
+.search-hero { scroll-margin-top: 80px; }
 .search-hero .page-intro { margin-bottom: 1.25rem; }
 
 .search-bar { display: flex; gap: 0.5rem; max-width: 760px; }
+.search-input { position: relative; flex: 1; display: flex; }
 .search-bar input {
   flex: 1;
+  padding-right: 2.75rem;
   min-height: 52px;
   padding-left: 2.75rem;
   font-size: 1.05rem;
@@ -182,6 +186,33 @@ textarea { resize: vertical; }
   background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") 1rem center / 1.2rem no-repeat;
 }
 .search-bar button { min-height: 52px; padding: 0 1.75rem; }
+
+/* The small "/" key shown inside the search box; hidden once you start typing */
+.key-hint {
+  position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
+  min-width: 1.5rem; padding: 0.05rem 0.4rem; text-align: center;
+  border: 1px solid var(--field); border-bottom-width: 2px; border-radius: 6px;
+  background: var(--soft); color: var(--muted); font-family: inherit; font-size: 0.8rem; font-weight: 600; line-height: 1.4; pointer-events: none;
+}
+.search-input input:focus + .key-hint,
+.search-input input:not(:placeholder-shown) + .key-hint { display: none; }
+
+/* "23 alumni · 4 industries · 12 cities" */
+.directory-stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: -0.5rem 0 1.25rem; color: var(--muted); font-size: 0.95rem; }
+.directory-stats[hidden] { display: none; }
+.directory-stats strong { color: var(--ink); font-size: 1.05rem; }
+.stat-dot { color: var(--muted); }
+
+/* Filters in use, shown above the results */
+.active-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: -0.25rem 0 1rem; }
+.active-filters[hidden] { display: none; }
+.filter-pill {
+  display: inline-flex; align-items: center; gap: 0.4rem;
+  min-height: 36px; padding: 0 0.6rem 0 0.9rem;
+  background: var(--blue-soft); border-color: #bae6fd; color: var(--blue-dark); font-weight: 500; font-size: 0.9rem;
+}
+.filter-pill:hover { background: #e0f2fe; border-color: var(--blue); }
+.pill-x { font-size: 1.1rem; line-height: 1; }
 
 /* Rows of small round buttons: recent searches and industries */
 .chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.85rem; }
@@ -341,9 +372,31 @@ textarea { resize: vertical; }
 .tag { padding: 0.1rem 0.55rem; border-radius: 6px; background: var(--blue-soft); color: var(--blue-dark); font-size: 0.8rem; font-weight: 500; }
 .tag-more { background: var(--soft); color: var(--muted); }
 
+/* Skill tags and the city are buttons that start a new search */
+.tag-button { min-height: 30px; border: 1px solid transparent; font: inherit; font-size: 0.8rem; font-weight: 500; }
+.tag-button:hover { background: #e0f2fe; border-color: var(--blue); color: var(--blue-dark); }
+.text-button {
+  min-height: 0; padding: 0; border: 0; border-radius: 4px;
+  background: none; color: inherit; font: inherit; font-weight: 500;
+  text-decoration: underline dotted var(--muted); text-underline-offset: 3px;
+}
+.text-button:hover { background: none; color: var(--blue); text-decoration-color: var(--blue); }
+
+/* Grey placeholder cards while results load */
+.skeleton { border-top-color: var(--border); }
+.skeleton:hover { box-shadow: var(--shadow); transform: none; }
+.bone { display: block; border-radius: 8px; background: var(--soft); animation: pulse 1.2s ease-in-out infinite; }
+.bone-avatar { width: 52px; height: 52px; border-radius: 50%; }
+.bone-line { height: 0.9rem; width: 80%; }
+.bone-line.short { width: 50%; }
+.bone-button { height: 44px; margin-top: auto; border-radius: 999px; }
+@keyframes pulse { 50% { opacity: 0.45; } }
+
 /* The button sits at the bottom so buttons line up across cards */
 .result-card .contact-button { margin-top: auto; width: 100%; background: transparent; color: var(--blue); }
 .result-card .contact-button:hover { background: var(--blue-soft); }
+/* "Request sent" / "Contact shared": greyed out, cannot be clicked again */
+.result-card .contact-button:disabled { background: var(--soft); border-color: var(--border); color: var(--muted); }
 
 /* Shown instead of cards when nothing matches */
 .empty-state {
@@ -415,6 +468,7 @@ dialog .message { margin: 0.75rem 0; font-weight: 400; }
   .search-bar { flex-direction: column; }
   .search-bar button { width: 100%; }
   .chip-label { min-width: 0; width: 100%; }
+  .key-hint { display: none; }
   .dialog-buttons button { flex: 1; }
 }
 
@@ -422,4 +476,5 @@ dialog .message { margin: 0.75rem 0; font-weight: 400; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
   .result-card:hover { transform: none; }
+  .bone { animation: none; }
 }

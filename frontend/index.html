@@ -25,12 +25,18 @@
         <h2 id="search-heading">Find alumni</h2>
         <p class="page-intro">Search graduates by name or skill, then narrow down by place, industry or year.
           Each alum decides which details are shown.</p>
+        <!-- Filled by search.js, e.g. "23 alumni · 4 industries · 12 cities" -->
+        <p id="directory-stats" class="directory-stats" hidden></p>
 
         <!-- These controls sit outside the form but belong to it through form="search-form" -->
         <div class="search-bar" role="search">
           <label for="q" class="visually-hidden">Name or skill</label>
-          <input form="search-form" type="search" id="q" name="q" maxlength="50" autocomplete="off"
-                 placeholder="Search by name or skill, e.g. python or Omar">
+          <span class="search-input">
+            <input form="search-form" type="search" id="q" name="q" maxlength="50" autocomplete="off"
+                   aria-keyshortcuts="/" placeholder="Search by name or skill, e.g. python or Omar">
+            <!-- Reminder that "/" jumps to the search box (hidden on phones and while typing) -->
+            <kbd class="key-hint" aria-hidden="true">/</kbd>
+          </span>
           <button form="search-form" type="submit">Search</button>
         </div>
 
@@ -102,7 +108,9 @@
               </select>
             </label>
           </div>
-          <div id="results" class="results"></div>
+          <!-- The filters in use, each with a x button that removes it -->
+          <div id="active-filters" class="active-filters" aria-label="Filters in use" hidden></div>
+          <div id="results" class="results" aria-live="off"></div>
 
           <nav class="pager" aria-label="Result pages">
             <button type="button" id="prev-page" class="secondary" disabled>Previous</button>

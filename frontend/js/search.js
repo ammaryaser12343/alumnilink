@@ -75,18 +75,32 @@ function renderCard(alumnus) {
   if (has(alumnus.graduationYear)) badges.append(element('span', 'badge', `Class of ${alumnus.graduationYear}`));
   if (badges.children.length) card.append(badges);
 
+  // The city is a button: clicking it filters by that location.
   if (has(alumnus.location)) {
-    const where = typeof alumnus.distanceKm === 'number'
-      ? `${alumnus.location} · ${alumnus.distanceKm} km away`
-      : alumnus.location;
-    card.append(element('p', 'card-location', where));
+    const where = element('p', 'card-location');
+    const city = element('button', 'text-button', alumnus.location);
+    city.type = 'button';
+    city.title = `Show alumni in ${alumnus.location}`;
+    city.addEventListener('click', () => searchFor('location', alumnus.location));
+    where.append(city);
+    if (typeof alumnus.distanceKm === 'number') where.append(` · ${alumnus.distanceKm} km away`);
+    card.append(where);
   }
   if (has(alumnus.bio)) card.append(element('p', 'card-bio', alumnus.bio));
 
   if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
     const tags = element('ul', 'skill-tags');
     tags.setAttribute('aria-label', 'Skills');
-    alumnus.skills.slice(0, MAX_SKILLS_SHOWN).forEach((skill) => tags.append(element('li', 'tag', skill)));
+    // Each skill is a button: clicking it searches for that skill.
+    alumnus.skills.slice(0, MAX_SKILLS_SHOWN).forEach((skill) => {
+      const item = element('li');
+      const button = element('button', 'tag tag-button', skill);
+      button.type = 'button';
+      button.title = `Search for ${skill}`;
+      button.addEventListener('click', () => searchFor('q', skill));
+      item.append(button);
+      tags.append(item);
+    });
     const extra = alumnus.skills.length - MAX_SKILLS_SHOWN;
     if (extra > 0) tags.append(element('li', 'tag tag-more', `+${extra}`));
     card.append(tags);
@@ -115,8 +129,9 @@ function renderResults(results) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'contact-button';
-      button.textContent = 'Request contact';
+      button.dataset.alumniId = alumnus.id;
       button.addEventListener('click', () => openContactDialog(alumnus));
+      showRequestState(button);
       card.append(button);
     }
 
@@ -124,11 +139,34 @@ function renderResults(results) {
   });
 }
 
+// Grey placeholder cards shown while the results load.
+function renderLoadingCards() {
+  const cards = [];
+  for (let i = 0; i < 6; i += 1) {
+    const card = element('div', 'result-card skeleton');
+    card.append(element('span', 'bone bone-avatar'), element('span', 'bone bone-line'),
+      element('span', 'bone bone-line short'), element('span', 'bone bone-button'));
+    cards.push(card);
+  }
+  resultsBox.replaceChildren(...cards);
+}
+
 async function search(page) {
   message.textContent = 'Searching...';
+  resultsBox.setAttribute('aria-busy', 'true');
+  renderLoadingCards();
+  prevButton.disabled = true;
+  nextButton.disabled = true;
+  showActiveFilters();
+  const query = buildQuery(page);
   try {
-    const data = await apiRequest(`${API.search}/alumni?${buildQuery(page)}`);
+    const data = await apiRequest(`${API.search}/alumni?${query}`);
     currentPage = data.page;
+    // A search with no filters counts the whole directory, which the stats line uses.
+    if (query === 'page=1') {
+      directoryTotal = data.total;
+      showStats();
+    }
     const place = data.near ? ` within ${data.near.radiusKm} km of ${data.near.name}` : '';
     if (data.total === 0) {
       renderEmptyState(`Nothing found${place}. Try a shorter search, another city or fewer filters.`);
@@ -142,7 +180,10 @@ async function search(page) {
       ? 'No results'
       : `${data.total} ${data.total === 1 ? 'alum' : 'alumni'} found${place}`;
     showActiveIndustry();
-    pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
+    // "Showing 11-20 of 23"
+    const first = (currentPage - 1) * data.pageSize + 1;
+    const last = first + data.results.length - 1;
+    pageInfo.textContent = `Showing ${first}–${last} of ${data.total} · Page ${currentPage} of ${totalPages}`;
     prevButton.disabled = currentPage <= 1;
     nextButton.disabled = currentPage >= totalPages;
   } catch (error) {
@@ -153,7 +194,119 @@ async function search(page) {
     message.textContent = error.status === 401
       ? 'Please log in to search the directory.'
       : error.message;
+  } finally {
+    resultsBox.removeAttribute('aria-busy');
   }
+}
+
+// Used by the clickable skill tags, city names and filter pills: set one field and search again.
+function searchFor(field, value) {
+  document.getElementById(field).value = value;
+  if (field === 'q') saveRecentSearch(value);
+  search(1);
+  document.querySelector('.search-hero').scrollIntoView({ block: 'start' });
+}
+
+// ---------- Filters in use ----------
+// One pill per filled-in filter, e.g. "Location: Cairo x". Clicking it removes that filter.
+const activeBox = document.getElementById('active-filters');
+
+function filterPill(text, clearFields) {
+  const pill = element('button', 'filter-pill', text);
+  pill.type = 'button';
+  pill.setAttribute('aria-label', `Remove filter: ${text}`);
+  pill.append(element('span', 'pill-x', '×'));
+  pill.addEventListener('click', () => {
+    clearFields.forEach((field) => { document.getElementById(field).value = ''; });
+    search(1);
+  });
+  return pill;
+}
+
+function showActiveFilters() {
+  const value = (field) => document.getElementById(field).value.trim();
+  const pills = [];
+  if (value('q')) pills.push(filterPill(`"${value('q')}"`, ['q']));
+  if (value('location')) pills.push(filterPill(`Location: ${value('location')}`, ['location']));
+  if (value('industry')) pills.push(filterPill(value('industry'), ['industry']));
+  if (value('gradYear')) pills.push(filterPill(`Class of ${value('gradYear')}`, ['gradYear']));
+  if (value('near')) {
+    pills.push(filterPill(`Within ${value('radiusKm') || 50} km of ${value('near')}`, ['near', 'radiusKm']));
+  }
+  if (pills.length > 1) {
+    const clear = element('button', 'link-button', 'Clear all');
+    clear.type = 'button';
+    clear.addEventListener('click', clearAll);
+    pills.push(clear);
+  }
+  activeBox.replaceChildren(...pills);
+  activeBox.hidden = pills.length === 0;
+}
+
+// ---------- "Request sent" on cards ----------
+// alumni profile id -> status of the newest request this user sent to them.
+const sentRequests = new Map();
+
+function showRequestState(button) {
+  const status = sentRequests.get(button.dataset.alumniId);
+  if (status === 'pending') {
+    button.textContent = 'Request sent';
+    button.disabled = true;
+  } else if (status === 'accepted') {
+    button.textContent = 'Contact shared';
+    button.disabled = true;
+  } else {
+    // No request yet, or the last one was declined: they may ask again.
+    button.textContent = 'Request contact';
+    button.disabled = false;
+  }
+}
+
+function refreshRequestButtons() {
+  resultsBox.querySelectorAll('.contact-button').forEach(showRequestState);
+}
+
+// Students get their sent list in "requests", alumni in "sent" (see GET /api/contact-requests).
+async function loadSentRequests() {
+  if (!user || (user.role !== 'student' && user.role !== 'alumni')) return;
+  try {
+    const data = await apiRequest(`${API.search}/contact-requests`);
+    const sent = data.role === 'alumni' ? data.sent : data.requests;
+    // The list is newest first, so the first request seen for each alum is the latest one.
+    (sent || []).forEach((request) => {
+      if (!sentRequests.has(request.alumniId)) sentRequests.set(request.alumniId, request.status);
+    });
+    refreshRequestButtons();
+  } catch (error) {
+    // Buttons simply stay as "Request contact"; the API still blocks duplicates.
+  }
+}
+
+// ---------- Directory stats in the top banner ----------
+let directoryTotal = null;
+let filterOptions = null;
+
+function plural(count, one, many) {
+  return `${count} ${count === 1 ? one : many}`;
+}
+
+function showStats() {
+  const box = document.getElementById('directory-stats');
+  if (directoryTotal === null || !filterOptions) return;
+  const industries = filterOptions.industries.filter((item) => item.count > 0).length;
+  const cities = filterOptions.locations.length;
+  // The API returns at most 20 places, so 20 means "20 or more".
+  const cityText = cities >= 20 ? '20+ cities' : plural(cities, 'city', 'cities');
+  box.replaceChildren();
+  [plural(directoryTotal, 'alum', 'alumni'), plural(industries, 'industry', 'industries'), cityText]
+    .forEach((text, index) => {
+      if (index > 0) box.append(element('span', 'stat-dot', '·'));
+      const [number, ...words] = text.split(' ');
+      const stat = element('span', 'stat');
+      stat.append(element('strong', '', number), ` ${words.join(' ')}`);
+      box.append(stat);
+    });
+  box.hidden = false;
 }
 
 function openContactDialog(alumnus) {
@@ -180,6 +333,8 @@ contactForm.addEventListener('submit', async (event) => {
       body: JSON.stringify({ alumniId: contactTarget.id, message: text })
     });
     contactStatus.textContent = 'Request sent. You will see the answer on the Contact requests page.';
+    sentRequests.set(contactTarget.id, 'pending');
+    refreshRequestButtons();
   } catch (error) {
     contactStatus.textContent = error.message;
     contactSend.disabled = false;
@@ -318,6 +473,8 @@ async function loadFilterOptions() {
     fillSuggestions(document.getElementById('q'), 'skill-suggestions', options.skills);
     fillSuggestions(document.getElementById('location'), 'location-suggestions', options.locations);
     showIndustryChips(options.industries);
+    filterOptions = options;
+    showStats();
   } catch (error) {
     // Not signed in or service down: the search itself shows the message.
   }
@@ -328,6 +485,15 @@ if (window.matchMedia('(max-width: 900px)').matches) {
   document.getElementById('filters-box').open = false;
 }
 
+// Pressing "/" anywhere on the page (except while typing in a field) jumps to the search box.
+document.addEventListener('keydown', (event) => {
+  const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName);
+  if (event.key !== '/' || typing || event.ctrlKey || event.metaKey || event.altKey || contactDialog.open) return;
+  event.preventDefault();
+  document.getElementById('q').focus();
+});
+
 showRecent();
 loadFilterOptions();
+loadSentRequests();
 search(1);
