@@ -60,6 +60,9 @@ window.profilePhoto = (() => {
   }
 
   openPhoto.addEventListener("click", () => {
+    const size = Math.min(preview.naturalWidth, preview.naturalHeight);
+    if (!size) return;
+    viewerImage.width = size;
     viewerImage.src = previewUrl;
     viewer.showModal();
   });

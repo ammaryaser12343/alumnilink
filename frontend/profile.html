@@ -96,14 +96,13 @@
         </form>
       </div>
     </main>
-    <dialog id="photo-viewer" class="photo-viewer" aria-labelledby="photo-viewer-title">
-      <div class="photo-viewer-bar">
-        <h3 id="photo-viewer-title">Profile photo</h3>
-        <form method="dialog">
-          <button type="submit" class="secondary" autofocus>Close</button>
-        </form>
-      </div>
+    <dialog id="photo-viewer" class="photo-viewer" aria-label="Profile photo">
       <img id="photo-viewer-image" alt="Your profile photo" />
+      <form class="photo-viewer-dismiss" method="dialog">
+        <button type="submit" autofocus>
+          <span aria-hidden="true">&#8592;</span> Back to my profile
+        </button>
+      </form>
     </dialog>
   </body>
 </html>

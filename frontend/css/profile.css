@@ -158,35 +158,51 @@
   height: 100%;
   object-fit: cover;
 }
-.photo-viewer {
+.photo-viewer[open] {
   width: fit-content;
-  max-width: min(28rem, calc(100% - 2rem));
+  max-width: min(28rem, calc(100% - 3rem), calc(100svh - 7rem));
   padding: 0;
-  border-radius: 1rem;
-  background: var(--card);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 .photo-viewer::backdrop {
-  background: transparent;
-}
-.photo-viewer-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: .8rem 1rem;
-  border-bottom: 1px solid var(--border);
-}
-.photo-viewer-bar h3 {
-  margin: 0;
+  background: rgb(5 10 20 / 48%);
+  backdrop-filter: blur(10px);
 }
 .photo-viewer img {
   display: block;
-  width: auto;
   max-width: 100%;
   height: auto;
-  max-height: 70vh;
-  margin: 0 auto;
-  object-fit: contain;
+  aspect-ratio: 1;
+  margin-inline: auto;
+  border-radius: 1.25rem;
+  object-fit: cover;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 20%), 0 18px 55px rgb(0 0 0 / 33%);
+}
+.photo-viewer-dismiss {
+  display: flex;
+  justify-content: center;
+  margin: 1rem 0 0;
+}
+.photo-viewer-dismiss button {
+  display: inline-flex;
+  align-items: center;
+  gap: .55rem;
+  padding-inline: 1.1rem;
+  border-color: var(--field);
+  background: var(--card);
+  color: var(--ink);
+  text-align: center;
+}
+.photo-viewer-dismiss button:hover {
+  border-color: var(--blue);
+  background: var(--soft);
+}
+.photo-viewer-dismiss button span {
+  color: var(--blue);
+  font-size: 1.2em;
+  line-height: 1;
 }
 .photo-placeholder {
   position: relative;
