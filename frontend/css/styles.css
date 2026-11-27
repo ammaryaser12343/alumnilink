@@ -187,7 +187,7 @@ textarea { resize: vertical; }
   font-size: 1rem;
   border-radius: 8px;
   /* magnifying glass drawn as a small SVG, so no icon font is needed */
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") 0.9rem center / 1.1rem no-repeat;
+  background: var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") 0.9rem center / 1.1rem no-repeat;
 }
 .search-bar button { min-height: 48px; padding: 0 1.5rem; border-radius: 8px; }
 
@@ -210,7 +210,7 @@ textarea { resize: vertical; }
   padding: 0 0.75rem;
   border: 1px solid var(--border);
   border-radius: 6px;
-  background: #fff;
+  background: var(--card);
   color: var(--text);
   font-size: 0.875rem;
   font-weight: 500;
@@ -231,7 +231,7 @@ textarea { resize: vertical; }
 .filter-pill {
   display: inline-flex; align-items: center; gap: 0.35rem;
   min-height: 32px; padding: 0 0.5rem 0 0.75rem;
-  background: #fff; border: 1px solid var(--field); border-radius: 6px;
+  background: var(--card); border: 1px solid var(--field); border-radius: 6px;
   color: var(--text); font-size: 0.875rem; font-weight: 500;
 }
 .filter-pill:hover { background: var(--soft); border-color: var(--muted); }
@@ -318,7 +318,6 @@ textarea { resize: vertical; }
   background: var(--card);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  overflow: hidden;
 }
 
 /* Row: initials | details | button */
@@ -346,6 +345,32 @@ textarea { resize: vertical; }
 }
 
 .avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+/* The photo and the name open the profile view */
+.avatar-button {
+  position: relative;
+  min-height: 0; padding: 0; border: 0; border-radius: 50%;
+  background: none; cursor: pointer;
+}
+.avatar-button:hover { background: none; }
+.avatar-button:hover .avatar { box-shadow: 0 0 0 2px var(--blue-soft); }
+.name-button {
+  min-height: 0; padding: 0; border: 0; border-radius: 4px;
+  background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer;
+}
+.name-button:hover { background: none; color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+
+/* Larger photo shown while the mouse is over a small one */
+.photo-peek {
+  position: absolute; top: calc(100% + 8px); left: 0; z-index: 5;
+  width: 160px; height: 160px; object-fit: cover;
+  border: 4px solid var(--card); border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.18);
+  pointer-events: none;
+}
+.photo-peek[hidden] { display: none; }
+/* Phones have no hover: tapping opens the profile view instead */
+@media (hover: none) { .photo-peek { display: none; } }
 .card-main { min-width: 0; display: grid; gap: 0.4rem; }
 .card-title h3 { margin: 0; font-family: var(--font-body); font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
 .card-company { margin: 0; color: var(--text); font-size: 0.925rem; }
@@ -372,7 +397,7 @@ textarea { resize: vertical; }
 
 /* Skill tags and the city are buttons that start a new search */
 .tag-button { min-height: 28px; border: 1px solid var(--soft); font: inherit; font-size: 0.8rem; font-weight: 400; }
-.tag-button:hover { background: #fff; border-color: var(--field); color: var(--ink); }
+.tag-button:hover { background: var(--card); border-color: var(--field); color: var(--ink); }
 .text-button {
   min-height: 0; padding: 0; border: 0; border-radius: 4px;
   background: none; color: inherit; font: inherit; font-weight: inherit;
@@ -381,10 +406,10 @@ textarea { resize: vertical; }
 .text-button:hover { background: none; color: var(--blue); text-decoration-color: var(--blue); }
 
 /* Request button on the right of the row */
-.result-card .contact-button { min-height: 36px; padding: 0 1rem; background: #fff; color: var(--blue); font-size: 0.9rem; }
+.result-card .contact-button { min-height: 36px; padding: 0 1rem; background: var(--card); color: var(--blue); font-size: 0.9rem; }
 .result-card .contact-button:hover { background: var(--blue-soft); }
 /* "Request sent" / "Contact shared": greyed out, cannot be clicked again */
-.result-card .contact-button:disabled { background: #fff; border-color: var(--border); color: var(--muted); }
+.result-card .contact-button:disabled { background: var(--card); border-color: var(--border); color: var(--muted); }
 
 /* Grey placeholder rows while results load */
 .bone { display: block; border-radius: 4px; background: var(--soft); animation: pulse 1.2s ease-in-out infinite; }
@@ -422,6 +447,25 @@ dialog h3 { margin-top: 0; font-size: 1.35rem; }
 dialog label { display: block; margin-bottom: 0.35rem; font-weight: 600; font-size: 0.875rem; }
 dialog .message { margin: 0.75rem 0; font-weight: 400; }
 .dialog-buttons { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.5rem; }
+
+/* Profile view window */
+.profile-dialog { max-width: 520px; padding: 0; }
+.profile-head { display: grid; justify-items: center; gap: 0.3rem; padding: 2rem 1.75rem 1.25rem; text-align: center; border-bottom: 1px solid var(--border); }
+.profile-photo-large {
+  display: grid; place-items: center; overflow: hidden;
+  width: 128px; height: 128px; margin-bottom: 0.6rem;
+  border-radius: 50%; background: var(--soft); color: var(--muted);
+  font-size: 2.25rem; font-weight: 600;
+}
+.profile-photo-large img { width: 100%; height: 100%; object-fit: cover; }
+.profile-head h3 { margin: 0; font-family: var(--font-body); font-size: 1.35rem; font-weight: 600; }
+.profile-body { padding: 1.25rem 1.75rem 0.25rem; }
+.profile-body h4 { margin: 0 0 0.4rem; font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); }
+.profile-bio { margin: 0 0 1.25rem; white-space: pre-line; }
+.profile-body .skill-tags { margin-bottom: 1.25rem; }
+.profile-dialog .dialog-buttons { padding: 0 1.75rem 1.5rem; }
+.profile-dialog .dialog-buttons button { white-space: nowrap; padding: 0 1.1rem; }
+.profile-head + .dialog-buttons { padding-top: 1.25rem; }
 
 /* ---------- 11. Contact requests page ---------- */
 #intro { margin: 0 0 1rem; max-width: 62ch; color: var(--muted); }

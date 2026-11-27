@@ -122,6 +122,11 @@
         </div>
       </div>
 
+      <!-- Profile view: opened by clicking an alum's name or photo, filled by search.js -->
+      <dialog id="profile-dialog" class="profile-dialog" aria-labelledby="profile-name">
+        <div id="profile-view"></div>
+      </dialog>
+
       <dialog id="contact-dialog" aria-labelledby="contact-heading">
         <form id="contact-form" method="dialog" novalidate>
           <h3 id="contact-heading">Ask <span id="contact-name"></span> for their contact details</h3>
@@ -143,4 +148,4 @@
   <script src="js/profile-config.js" defer></script>
   <script src="js/search.js" defer></script>
 </body>
-</html>
+</html>

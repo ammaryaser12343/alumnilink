@@ -59,20 +59,9 @@ function initials(name) {
 
 const MAX_SKILLS_SHOWN = 5;
 
-function renderCard(alumnus) {
-  // Row: initials | name, company, meta line, bio, skills | button (added by renderResults)
-  const card = element('article', 'result-card');
-  const avatar = element('span', 'avatar', initials(alumnus.name));
-  avatar.setAttribute('aria-hidden', 'true');
-  card.append(avatar);
-
-  const main = element('div', 'card-main');
-  const title = element('div', 'card-title');
-  title.append(element('h3', '', alumnus.name));
-  if (has(alumnus.company)) title.append(element('p', 'card-company', alumnus.company));
-  main.append(title);
-
-  // "Software · Class of 2020 · Cairo · 3 km away" (only the parts the alum shows)
+// "Software · Class of 2020 · Cairo · 3 km away" (only the parts the alum shows).
+// On the result rows the city is a button that filters by it.
+function metaLine(alumnus, clickableCity) {
   const meta = element('p', 'card-meta');
   const addPart = (part) => {
     if (meta.childNodes.length) meta.append(element('span', 'sep', '·'));
@@ -80,39 +69,157 @@ function renderCard(alumnus) {
   };
   if (has(alumnus.industry)) addPart(alumnus.industry);
   if (has(alumnus.graduationYear)) addPart(`Class of ${alumnus.graduationYear}`);
-  // The city is a button: clicking it filters by that location.
   if (has(alumnus.location)) {
-    const city = element('button', 'text-button', alumnus.location);
-    city.type = 'button';
-    city.title = `Show alumni in ${alumnus.location}`;
-    city.addEventListener('click', () => searchFor('location', alumnus.location));
-    addPart(city);
+    if (clickableCity) {
+      const city = element('button', 'text-button', alumnus.location);
+      city.type = 'button';
+      city.title = `Show alumni in ${alumnus.location}`;
+      city.addEventListener('click', () => searchFor('location', alumnus.location));
+      addPart(city);
+    } else {
+      addPart(alumnus.location);
+    }
   }
   if (typeof alumnus.distanceKm === 'number') addPart(`${alumnus.distanceKm} km away`);
+  return meta;
+}
+
+// Skill tags; each one is a button that searches for that skill.
+// max = how many to show before "+N" (null shows them all).
+function skillList(skills, max) {
+  const tags = element('ul', 'skill-tags');
+  tags.setAttribute('aria-label', 'Skills');
+  const shown = max ? skills.slice(0, max) : skills;
+  shown.forEach((skill) => {
+    const item = element('li');
+    const button = element('button', 'tag tag-button', skill);
+    button.type = 'button';
+    button.title = `Search for ${skill}`;
+    button.addEventListener('click', () => {
+      if (profileDialog.open) profileDialog.close();
+      searchFor('q', skill);
+    });
+    item.append(button);
+    tags.append(item);
+  });
+  if (max && skills.length > max) tags.append(element('li', 'tag tag-more', `+${skills.length - max}`));
+  return tags;
+}
+
+function renderCard(alumnus) {
+  // Row: photo | name, company, meta line, bio, skills | button (added by renderResults)
+  const card = element('article', 'result-card');
+
+  // The photo (or initials) is a button that opens the profile view.
+  // The .avatar span inside is where the profile photo is placed when it loads.
+  const avatarButton = element('button', 'avatar-button');
+  avatarButton.type = 'button';
+  avatarButton.setAttribute('aria-label', `View ${alumnus.name}'s profile`);
+  const avatar = element('span', 'avatar', initials(alumnus.name));
+  avatar.setAttribute('aria-hidden', 'true');
+  // Bigger copy of the photo, shown while the mouse is over it (see .photo-peek in styles.css)
+  const peek = element('img', 'photo-peek');
+  peek.alt = '';
+  peek.hidden = true;
+  avatarButton.append(avatar, peek);
+  avatarButton.addEventListener('mouseenter', () => {
+    const photo = avatar.querySelector('img');
+    if (!photo) return;
+    peek.src = photo.src;
+    peek.hidden = false;
+  });
+  avatarButton.addEventListener('mouseleave', () => { peek.hidden = true; });
+  avatarButton.addEventListener('click', () => { peek.hidden = true; openProfile(alumnus, avatar); });
+  card.append(avatarButton);
+
+  const main = element('div', 'card-main');
+  const title = element('div', 'card-title');
+  const heading = element('h3');
+  const nameButton = element('button', 'name-button', alumnus.name);
+  nameButton.type = 'button';
+  nameButton.addEventListener('click', () => openProfile(alumnus, avatar));
+  heading.append(nameButton);
+  title.append(heading);
+  if (has(alumnus.company)) title.append(element('p', 'card-company', alumnus.company));
+  main.append(title);
+
+  const meta = metaLine(alumnus, true);
   if (meta.childNodes.length) main.append(meta);
 
   if (has(alumnus.bio)) main.append(element('p', 'card-bio', alumnus.bio));
 
   if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
-    const tags = element('ul', 'skill-tags');
-    tags.setAttribute('aria-label', 'Skills');
-    // Each skill is a button: clicking it searches for that skill.
-    alumnus.skills.slice(0, MAX_SKILLS_SHOWN).forEach((skill) => {
-      const item = element('li');
-      const button = element('button', 'tag tag-button', skill);
-      button.type = 'button';
-      button.title = `Search for ${skill}`;
-      button.addEventListener('click', () => searchFor('q', skill));
-      item.append(button);
-      tags.append(item);
-    });
-    const extra = alumnus.skills.length - MAX_SKILLS_SHOWN;
-    if (extra > 0) tags.append(element('li', 'tag tag-more', `+${extra}`));
-    main.append(tags);
+    main.append(skillList(alumnus.skills, MAX_SKILLS_SHOWN));
   }
   card.append(main);
   return card;
 }
+
+// ---------- Profile view ----------
+// Clicking a name or photo shows that alum's profile in a window: large photo,
+// details, full bio and every skill. It only uses what the search already returned,
+// so hidden fields stay hidden here too.
+const profileDialog = document.getElementById('profile-dialog');
+const profileView = document.getElementById('profile-view');
+
+function canRequest(alumnus) {
+  return user && (user.role === 'student' || user.role === 'alumni') && !alumnus.isMine;
+}
+
+function openProfile(alumnus, avatar) {
+  const photoBox = element('div', 'profile-photo-large');
+  const photo = avatar.querySelector('img');
+  if (photo) {
+    const big = element('img');
+    big.src = photo.src;
+    big.alt = `Photo of ${alumnus.name}`;
+    photoBox.append(big);
+  } else {
+    photoBox.textContent = initials(alumnus.name);
+    photoBox.setAttribute('aria-hidden', 'true');
+  }
+
+  const head = element('div', 'profile-head');
+  head.append(photoBox, element('h3', '', alumnus.name));
+  head.querySelector('h3').id = 'profile-name';
+  if (has(alumnus.company)) head.append(element('p', 'card-company', alumnus.company));
+  const meta = metaLine(alumnus, false);
+  if (meta.childNodes.length) head.append(meta);
+
+  const body = element('div', 'profile-body');
+  if (has(alumnus.bio)) {
+    body.append(element('h4', '', 'About'), element('p', 'profile-bio', alumnus.bio));
+  }
+  if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
+    body.append(element('h4', '', 'Skills'), skillList(alumnus.skills, null));
+  }
+
+  const actions = element('div', 'dialog-buttons');
+  const close = element('button', 'secondary', 'Close');
+  close.type = 'button';
+  close.addEventListener('click', () => profileDialog.close());
+  actions.append(close);
+  if (canRequest(alumnus)) {
+    const ask = element('button', 'contact-button');
+    ask.type = 'button';
+    ask.dataset.alumniId = alumnus.id;
+    showRequestState(ask);
+    ask.addEventListener('click', () => {
+      profileDialog.close();
+      openContactDialog(alumnus);
+    });
+    actions.append(ask);
+  }
+
+  profileView.replaceChildren(head, body, actions);
+  if (!body.childNodes.length) body.remove();
+  profileDialog.showModal();
+}
+
+// Clicking the dark area around the window closes it.
+profileDialog.addEventListener('click', (event) => {
+  if (event.target === profileDialog) profileDialog.close();
+});
 
 function renderEmptyState(text) {
   const box = element('div', 'empty-state');
@@ -133,7 +240,7 @@ function renderResults(results) {
     avatars.set(alumnus.id, card.querySelector('.avatar'));
 
     // Students and alumni can ask an alum for contact details, but not on their own card.
-    if (user && (user.role === 'student' || user.role === 'alumni') && !alumnus.isMine) {
+    if (canRequest(alumnus)) {
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'contact-button';
@@ -517,7 +624,7 @@ if (window.matchMedia('(max-width: 900px)').matches) {
 // Pressing "/" anywhere on the page (except while typing in a field) jumps to the search box.
 document.addEventListener('keydown', (event) => {
   const typing = ['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName);
-  if (event.key !== '/' || typing || event.ctrlKey || event.metaKey || event.altKey || contactDialog.open) return;
+  if (event.key !== '/' || typing || event.ctrlKey || event.metaKey || event.altKey || contactDialog.open || profileDialog.open) return;
   event.preventDefault();
   document.getElementById('q').focus();
 });
