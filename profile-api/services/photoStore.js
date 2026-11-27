@@ -3,6 +3,7 @@ const sharp = require("sharp");
 const { ApiError } = require("../errors");
 
 const MAX_PHOTO_BYTES = 2 * 1024 * 1024;
+const DIRECTORY_PHOTO_SIZE = 256;
 const CONTENT_TYPE = "image/webp";
 const inputFormats = {
   "image/jpeg": Buffer.from([0xff, 0xd8, 0xff]),
@@ -16,14 +17,24 @@ async function resizePhoto(bytes, contentType) {
     try {
       return await sharp(bytes, { limitInputPixels: 16_000_000, failOn: "warning" })
         .autoOrient()
-        .resize(256, 256, { fit: "cover" })
-        .webp({ quality: 82 })
+        .resize(512, 512, { fit: "cover", withoutEnlargement: true })
+        .webp({ quality: 88 })
         .toBuffer();
     } catch {
       // The image decoder rejected the file or its dimensions.
     }
   }
   throw new ApiError(400, "INVALID_PHOTO", "Choose a valid JPEG or PNG photo up to 16 megapixels.");
+}
+
+async function directoryThumbnail(photo) {
+  const image = sharp(photo);
+  const { width, height } = await image.metadata();
+  if (width <= DIRECTORY_PHOTO_SIZE && height <= DIRECTORY_PHOTO_SIZE) return photo;
+  return image
+    .resize(DIRECTORY_PHOTO_SIZE, DIRECTORY_PHOTO_SIZE, { fit: "cover", withoutEnlargement: true })
+    .webp({ quality: 82 })
+    .toBuffer();
 }
 
 function encryptPhoto(photo, key, objectKey) {
@@ -114,4 +125,4 @@ function createPhotoStore(env) {
   };
 }
 
-module.exports = { createPhotoStore, resizePhoto, inputFormats, MAX_PHOTO_BYTES };
+module.exports = { createPhotoStore, resizePhoto, directoryThumbnail, inputFormats, MAX_PHOTO_BYTES };

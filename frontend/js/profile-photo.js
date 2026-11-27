@@ -4,6 +4,9 @@ window.profilePhoto = (() => {
   const panel = document.getElementById("profile-photo");
   const input = document.getElementById("photo-file");
   const preview = document.getElementById("photo-preview");
+  const openPhoto = document.getElementById("photo-open");
+  const viewer = document.getElementById("photo-viewer");
+  const viewerImage = document.getElementById("photo-viewer-image");
   const placeholder = panel.querySelector(".photo-placeholder");
   const form = document.getElementById("photo-upload");
   const upload = form.querySelector('button[type="submit"]');
@@ -22,13 +25,14 @@ window.profilePhoto = (() => {
     previewUrl = photo ? URL.createObjectURL(photo) : null;
     if (previewUrl) preview.src = previewUrl;
     else preview.removeAttribute("src");
-    preview.hidden = !previewUrl;
+    openPhoto.hidden = !previewUrl;
     placeholder.hidden = Boolean(previewUrl);
     updateControls();
   }
 
   function updateControls() {
     input.disabled = busy || !available;
+    openPhoto.disabled = busy || !saved || Boolean(input.files.length);
     upload.hidden = !input.files.length;
     upload.disabled = input.disabled || upload.hidden;
     fileDetail.textContent = input.files[0]?.name || "JPEG or PNG, up to 2 MB";
@@ -54,6 +58,15 @@ window.profilePhoto = (() => {
       render(input.files[0] ?? saved);
     }
   }
+
+  openPhoto.addEventListener("click", () => {
+    viewerImage.src = previewUrl;
+    viewer.showModal();
+  });
+  viewer.addEventListener("click", (event) => {
+    if (event.target === viewer) viewer.close();
+  });
+  viewer.addEventListener("close", () => viewerImage.removeAttribute("src"));
 
   input.addEventListener("change", () => {
     const file = input.files[0];

@@ -248,7 +248,7 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     assert.equal((await requestPhoto()).status, 204);
 
     const png = await sharp({
-      create: { width: 40, height: 60, channels: 3, background: "red" },
+      create: { width: 960, height: 720, channels: 3, background: "red" },
     }).png().withMetadata().toBuffer();
     const jpeg = await sharp({
       create: { width: 60, height: 40, channels: 3, background: "blue" },
@@ -260,7 +260,7 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     assert.equal(initial.headers.get("cache-control"), "no-store");
     const initialBytes = Buffer.from(await initial.arrayBuffer());
     const metadata = await sharp(initialBytes).metadata();
-    assert.deepEqual([metadata.format, metadata.width, metadata.height], ["webp", 256, 256]);
+    assert.deepEqual([metadata.format, metadata.width, metadata.height], ["webp", 512, 512]);
     assert.equal(metadata.exif, undefined);
 
     assert.equal((await requestPhoto("PUT", "alumni", jpeg, "image/png")).status, 400);
@@ -280,6 +280,8 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     assert.equal(replacement.status, 200);
     const replacementBytes = Buffer.from(await replacement.arrayBuffer());
     assert.notDeepEqual(replacementBytes, initialBytes);
+    const smallPhoto = await sharp(replacementBytes).metadata();
+    assert.ok(smallPhoto.width <= 60 && smallPhoto.height <= 40);
     assert.deepEqual(Buffer.from(await (await requestPhoto()).arrayBuffer()), replacementBytes);
 
     assert.equal((await requestPhoto("DELETE")).status, 204);
@@ -294,10 +296,11 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     const set = (audience, who = "alumni") =>
       api(audiencePath, "PATCH", { audience }, who);
     const sample = await sharp({
-      create: { width: 10, height: 10, channels: 3, background: "red" },
+      create: { width: 512, height: 512, channels: 3, background: "red" },
     }).webp().toBuffer();
     photos.set(profileId, sample);
-    const allowedPhoto = { [profileId]: sample.toString("base64") };
+    const compressed = await sharp(sample).resize(256, 256).webp({ quality: 82 }).toBuffer();
+    const allowedPhoto = { [profileId]: compressed.toString("base64") };
 
     assert.deepEqual((await api(audiencePath)).body, { audience: "private" });
     assert.equal((await list(null)).status, 401);
