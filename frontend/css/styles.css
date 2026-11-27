@@ -159,20 +159,84 @@ input:focus, select:focus, textarea:focus {
 
 textarea { resize: vertical; }
 
-/* ---------- 6. Search page: filters sidebar + results ---------- */
+/* ---------- 6. Search page layout ---------- */
+/* Top: a blue band with the main search bar, recent searches and industry chips */
+.search-hero {
+  margin: 0 0 1.5rem;
+  padding: 1.75rem clamp(1rem, 3vw, 2rem);
+  border-radius: var(--radius);
+  background: linear-gradient(120deg, #e0f2fe, #f0f9ff 60%, var(--card));
+  border: 1px solid #bae6fd;
+}
+.search-hero h2 { margin-bottom: 0.25rem; }
+.search-hero .page-intro { margin-bottom: 1.25rem; }
+
+.search-bar { display: flex; gap: 0.5rem; max-width: 760px; }
+.search-bar input {
+  flex: 1;
+  min-height: 52px;
+  padding-left: 2.75rem;
+  font-size: 1.05rem;
+  border-radius: 999px;
+  /* magnifying glass drawn as a small SVG, so no icon font is needed */
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") 1rem center / 1.2rem no-repeat;
+}
+.search-bar button { min-height: 52px; padding: 0 1.75rem; }
+
+/* Rows of small round buttons: recent searches and industries */
+.chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.85rem; }
+.chip-row[hidden] { display: none; }
+.chip-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); min-width: 5.5rem; }
+.chip-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip {
+  min-height: 36px;
+  padding: 0 0.9rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  background: #fff;
+  color: var(--text);
+  border: 1px solid var(--field);
+}
+.chip:hover { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
+.chip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+/* A button that looks like a link (for "Clear") */
+.link-button { min-height: 36px; padding: 0 0.5rem; background: none; border: 0; color: var(--blue); font-weight: 500; text-decoration: underline; }
+.link-button:hover { background: none; color: var(--blue-dark); }
+
+/* Below: filters on the left, results on the right */
 .search-layout {
   display: grid;
-  grid-template-columns: 280px 1fr;   /* sidebar, then the results */
+  grid-template-columns: 260px 1fr;
   gap: 1.5rem;
   align-items: start;
 }
 
-/* The sidebar stays in view while the results scroll (the header is about 57px tall) */
+/* The filters stay in view while the results scroll (the header is about 57px tall) */
 .filters { position: sticky; top: 73px; }
 .filters h3 { margin: 0 0 0.75rem; font-size: 1.1rem; }
 
+/* The Filters title is a <summary>; on wide screens it is a plain heading */
+.filters summary { list-style: none; }
+.filters summary::-webkit-details-marker { display: none; }
+@media (min-width: 901px) {
+  .filters summary { pointer-events: none; }
+}
+
+.near-me { margin: 0; padding: 0.75rem 0 0; border: 0; border-top: 1px solid var(--border); display: grid; gap: 1rem; }
+.near-me legend { padding: 0; font-size: 0.875rem; font-weight: 600; color: var(--ink); }
+.filter-buttons { display: grid; gap: 0.5rem; }
+
 .results-column { min-width: 0; }
-.results-column .message { margin-top: 0; }
+
+/* "23 alumni found" on the left, Sort on the right */
+.results-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
+.results-header .message { margin: 0; color: var(--ink); font-weight: 600; font-size: 1.05rem; }
+.sort-control { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
+.sort-control select { width: auto; max-width: 220px; min-height: 40px; }
+
+/* Text only screen readers read (used for the search bar's label) */
+.visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 
 /* ---------- 7. Search form ---------- */
 .search-form {
@@ -197,64 +261,107 @@ textarea { resize: vertical; }
 .message { min-height: 1.5rem; margin: 1.5rem 0 1rem; color: var(--muted); font-weight: 500; }
 .message:empty { min-height: 0; margin: 0.5rem 0; }
 
-/* Narrower screens: the sidebar goes back on top of the results */
+/* Narrower screens: the filters go back on top of the results */
 @media (max-width: 900px) {
   .search-layout { grid-template-columns: 1fr; }
   .filters { position: static; }
+  /* On phones and tablets "Filters" becomes a button that opens and closes the box */
+  .filters summary {
+    display: flex; align-items: center; justify-content: space-between;
+    min-height: 48px; padding: 0 1rem; margin-bottom: 0.75rem;
+    background: var(--card); border: 1px solid var(--field); border-radius: var(--radius); cursor: pointer;
+  }
+  .filters summary h3 { margin: 0; }
+  .filters summary::after { content: 'Show'; color: var(--blue); font-weight: 600; }
+  .filters details[open] summary::after { content: 'Hide'; }
   .filters .search-form { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+  .near-me { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 }
 
-/* ---------- 8. Result cards (profile-card style) ---------- */
-.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1.25rem; }
+/* ---------- 8. Result cards ---------- */
+.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
 
 .result-card {
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  padding: 0 1.25rem 1.25rem;
+  gap: 0.75rem;
+  padding: 1.25rem;
   background: var(--card);
   border: 1px solid var(--border);
+  border-top: 3px solid var(--blue);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  transition: box-shadow 0.2s;
+  transition: box-shadow 0.2s, transform 0.2s;
 }
+.result-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
 
-.result-card:hover { box-shadow: var(--shadow-hover); }
-
-/* Soft blue banner across the top of each card */
-.result-card::before {
-  content: '';
-  display: block;
-  height: 56px;
-  margin: 0 -1.25rem;
-  background: linear-gradient(120deg, #bae6fd, #e0f2fe);
-}
-
-.result-card h3 { margin: 0 0 0.5rem; font-size: 1.25rem; }
-
-/* Round avatar sitting on the banner: a generic person icon, since there are no photos */
-.result-card h3::before {
-  content: '';
-  display: block;
-  width: 64px;
-  height: 64px;
-  margin: -32px 0 0.6rem;
-  border: 3px solid #fff;
+/* Name with round initials beside it */
+.card-top { display: flex; align-items: center; gap: 0.85rem; }
+.avatar {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
-  background: #e2e8f0 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2394a3b8'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7z'/%3E%3C/svg%3E") center 60% / 70% no-repeat;
+  background: var(--blue-soft);
+  color: var(--blue);
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 1.15rem;
+}
+.card-title { min-width: 0; }
+.card-title h3 { margin: 0; font-size: 1.15rem; overflow-wrap: anywhere; }
+.card-company { margin: 0.1rem 0 0; color: var(--muted); font-size: 0.9rem; }
+
+.badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.badge { padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); font-size: 0.8rem; font-weight: 500; color: var(--text); }
+
+/* Location with a small pin icon */
+.card-location {
+  margin: 0;
+  padding-left: 1.3rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230369a1'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") left center / 1rem no-repeat;
 }
 
-.result-card p { margin: 0.2rem 0; font-size: 0.925rem; }
+/* Bio cut to three lines so cards stay the same height */
+.card-bio {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--muted);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
-/* The small labels ("Company:", "Skills:") written by the JavaScript */
-.result-card strong, .request-card strong { font-weight: 600; color: var(--muted); }
+.skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0; margin: 0; list-style: none; }
+.tag { padding: 0.1rem 0.55rem; border-radius: 6px; background: var(--blue-soft); color: var(--blue-dark); font-size: 0.8rem; font-weight: 500; }
+.tag-more { background: var(--soft); color: var(--muted); }
 
-/* Pushes the button to the bottom so the buttons line up across cards */
+/* The button sits at the bottom so buttons line up across cards */
 .result-card .contact-button { margin-top: auto; width: 100%; background: transparent; color: var(--blue); }
 .result-card .contact-button:hover { background: var(--blue-soft); }
-.result-card p:last-of-type { margin-bottom: 1rem; }
+
+/* Shown instead of cards when nothing matches */
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 2.5rem 1.5rem;
+  text-align: center;
+  background: var(--card);
+  border: 1px dashed var(--field);
+  border-radius: var(--radius);
+}
+.empty-state h3 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+.empty-state p { margin: 0 auto 1.25rem; max-width: 46ch; color: var(--muted); }
+
+/* The request-card labels written by requests.js */
+.request-card strong { font-weight: 600; color: var(--muted); }
 
 /* ---------- 9. Pager ---------- */
+.pager[hidden] { display: none; }
 .pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 2rem 0 0; color: var(--muted); }
 
 /* ---------- 10. Contact dialog ---------- */
@@ -305,10 +412,14 @@ dialog .message { margin: 0.75rem 0; font-weight: 400; }
   .site-header nav { width: 100%; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
   .site-header nav a { flex-shrink: 0; min-height: 48px; padding: 0 0.45rem; font-size: 0.88rem; }
   .search-form { padding: 1rem; }
+  .search-bar { flex-direction: column; }
+  .search-bar button { width: 100%; }
+  .chip-label { min-width: 0; width: 100%; }
   .dialog-buttons button { flex: 1; }
 }
 
 /* People who ask their system for less motion get none */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
+  .result-card:hover { transform: none; }
 }

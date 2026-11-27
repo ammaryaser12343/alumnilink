@@ -5,6 +5,7 @@ const resultsBox = document.getElementById('results');
 const prevButton = document.getElementById('prev-page');
 const nextButton = document.getElementById('next-page');
 const pageInfo = document.getElementById('page-info');
+const pager = document.querySelector('.pager');
 const industrySelect = document.getElementById('industry');
 
 const contactDialog = document.getElementById('contact-dialog');
@@ -39,36 +40,75 @@ function buildQuery(page) {
 }
 
 // Every value goes in with textContent, never innerHTML, so profile text cannot run as code.
-function addLine(card, label, value) {
-  if (value === undefined || value === null || value === '') return;
-  const line = document.createElement('p');
-  const strong = document.createElement('strong');
-  strong.textContent = `${label}: `;
-  line.append(strong, document.createTextNode(String(value)));
-  card.append(line);
+// Hidden fields are simply missing from the API answer, so each part is added only if present.
+function element(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
+function has(value) {
+  return value !== undefined && value !== null && value !== '';
+}
+
+// "Mariam Hassan" -> "MH"
+function initials(name) {
+  return name.split(' ').filter(Boolean).slice(0, 2).map((word) => word[0].toUpperCase()).join('');
+}
+
+const MAX_SKILLS_SHOWN = 5;
+
+function renderCard(alumnus) {
+  const card = element('article', 'result-card');
+
+  const top = element('div', 'card-top');
+  top.append(element('span', 'avatar', initials(alumnus.name)));
+  const title = element('div', 'card-title');
+  title.append(element('h3', '', alumnus.name));
+  if (has(alumnus.company)) title.append(element('p', 'card-company', alumnus.company));
+  top.append(title);
+  card.append(top);
+
+  const badges = element('div', 'badges');
+  if (has(alumnus.industry)) badges.append(element('span', 'badge', alumnus.industry));
+  if (has(alumnus.graduationYear)) badges.append(element('span', 'badge', `Class of ${alumnus.graduationYear}`));
+  if (badges.children.length) card.append(badges);
+
+  if (has(alumnus.location)) {
+    const where = typeof alumnus.distanceKm === 'number'
+      ? `${alumnus.location} · ${alumnus.distanceKm} km away`
+      : alumnus.location;
+    card.append(element('p', 'card-location', where));
+  }
+  if (has(alumnus.bio)) card.append(element('p', 'card-bio', alumnus.bio));
+
+  if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
+    const tags = element('ul', 'skill-tags');
+    tags.setAttribute('aria-label', 'Skills');
+    alumnus.skills.slice(0, MAX_SKILLS_SHOWN).forEach((skill) => tags.append(element('li', 'tag', skill)));
+    const extra = alumnus.skills.length - MAX_SKILLS_SHOWN;
+    if (extra > 0) tags.append(element('li', 'tag tag-more', `+${extra}`));
+    card.append(tags);
+  }
+  return card;
+}
+
+function renderEmptyState(text) {
+  const box = element('div', 'empty-state');
+  box.append(element('h3', '', 'No alumni match your search'));
+  box.append(element('p', '', text));
+  const clear = element('button', 'secondary', 'Clear all filters');
+  clear.type = 'button';
+  clear.addEventListener('click', clearAll);
+  box.append(clear);
+  resultsBox.replaceChildren(box);
 }
 
 function renderResults(results) {
   resultsBox.replaceChildren();
   results.forEach((alumnus) => {
-    const card = document.createElement('article');
-    card.className = 'result-card';
-
-    const name = document.createElement('h3');
-    name.textContent = alumnus.name;
-    card.append(name);
-
-    addLine(card, 'Company', alumnus.company);
-    addLine(card, 'Industry', alumnus.industry);
-    addLine(card, 'Location', alumnus.location);
-    if (typeof alumnus.distanceKm === 'number') {
-      addLine(card, 'Distance', `${alumnus.distanceKm} km`);
-    }
-    addLine(card, 'Graduated', alumnus.graduationYear);
-    if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
-      addLine(card, 'Skills', alumnus.skills.join(', '));
-    }
-    addLine(card, 'About', alumnus.bio);
+    const card = renderCard(alumnus);
 
     // Students and alumni can ask an alum for contact details, but not on their own card.
     if (user && (user.role === 'student' || user.role === 'alumni') && !alumnus.isMine) {
@@ -89,13 +129,19 @@ async function search(page) {
   try {
     const data = await apiRequest(`${API.search}/alumni?${buildQuery(page)}`);
     currentPage = data.page;
-    renderResults(data.results);
+    const place = data.near ? ` within ${data.near.radiusKm} km of ${data.near.name}` : '';
+    if (data.total === 0) {
+      renderEmptyState(`Nothing found${place}. Try a shorter search, another city or fewer filters.`);
+    } else {
+      renderResults(data.results);
+    }
 
     const totalPages = Math.max(1, Math.ceil(data.total / data.pageSize));
-    const place = data.near ? ` within ${data.near.radiusKm} km of ${data.near.name}` : '';
+    pager.hidden = data.total === 0;
     message.textContent = data.total === 0
-      ? `No alumni match your search${place}.`
-      : `${data.total} alumni found${place}.`;
+      ? 'No results'
+      : `${data.total} ${data.total === 1 ? 'alum' : 'alumni'} found${place}`;
+    showActiveIndustry();
     pageInfo.textContent = `Page ${currentPage} of ${totalPages}`;
     prevButton.disabled = currentPage <= 1;
     nextButton.disabled = currentPage >= totalPages;
@@ -143,8 +189,101 @@ document.getElementById('contact-cancel').addEventListener('click', () => contac
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
+  saveRecentSearch(document.getElementById('q').value.trim());
   search(1);
 });
+// Sorting sits above the results, so changing it searches straight away.
+document.getElementById('sort').addEventListener('change', () => search(1));
+
+// Empties every field (including the search bar and Sort, which belong to the form) and searches again.
+function clearAll() {
+  form.reset();
+  search(1);
+}
+document.getElementById('clear-filters').addEventListener('click', clearAll);
+
+// ---------- Recent searches ----------
+// Kept only in this browser (localStorage), one list per signed-in user, at most 5.
+// Browser storage can be switched off, so every read and write is wrapped in try/catch.
+const recentBox = document.getElementById('recent-searches');
+const recentList = document.getElementById('recent-list');
+const recentKey = `alumnilink.recentSearches.${user ? user.id : 'guest'}`;
+const MAX_RECENT = 5;
+
+function readRecent() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(recentKey) || '[]');
+    return Array.isArray(saved) ? saved.filter((item) => typeof item === 'string') : [];
+  } catch (error) {
+    return [];
+  }
+}
+
+function saveRecentSearch(text) {
+  if (!text) return;
+  const others = readRecent().filter((item) => item.toLowerCase() !== text.toLowerCase());
+  try {
+    localStorage.setItem(recentKey, JSON.stringify([text, ...others].slice(0, MAX_RECENT)));
+  } catch (error) {
+    // Storage blocked: the search still works, it just is not remembered.
+  }
+  showRecent();
+}
+
+function chip(text, onClick) {
+  const button = element('button', 'chip', text);
+  button.type = 'button';
+  button.addEventListener('click', onClick);
+  return button;
+}
+
+function showRecent() {
+  const items = readRecent();
+  recentList.replaceChildren(...items.map((text) => chip(text, () => {
+    document.getElementById('q').value = text;
+    saveRecentSearch(text);
+    search(1);
+  })));
+  recentBox.hidden = items.length === 0;
+}
+
+document.getElementById('clear-recent').addEventListener('click', () => {
+  try {
+    localStorage.removeItem(recentKey);
+  } catch (error) {
+    // Nothing to clear if storage is blocked.
+  }
+  showRecent();
+});
+
+// ---------- Industry chips ----------
+// One click filters by an industry; clicking the selected one again removes the filter.
+const industryBox = document.getElementById('industry-chips');
+const industryList = document.getElementById('industry-list');
+const MAX_INDUSTRY_CHIPS = 6;
+
+function showIndustryChips(industries) {
+  const top = industries.filter((item) => item.count > 0)
+    .sort((first, second) => second.count - first.count)
+    .slice(0, MAX_INDUSTRY_CHIPS);
+  industryList.replaceChildren(...top.map((item) => {
+    const button = chip(`${item.name} (${item.count})`, () => {
+      industrySelect.value = industrySelect.value === item.name ? '' : item.name;
+      search(1);
+    });
+    button.dataset.industry = item.name;
+    return button;
+  }));
+  industryBox.hidden = top.length === 0;
+  showActiveIndustry();
+}
+
+// Marks the chip that matches the Industry filter, so both always agree.
+function showActiveIndustry() {
+  for (const button of industryList.querySelectorAll('.chip')) {
+    button.setAttribute('aria-pressed', String(button.dataset.industry === industrySelect.value));
+  }
+}
 prevButton.addEventListener('click', () => search(currentPage - 1));
 nextButton.addEventListener('click', () => search(currentPage + 1));
 
@@ -178,10 +317,17 @@ async function loadFilterOptions() {
     if (options.graduationYears.max) year.max = options.graduationYears.max;
     fillSuggestions(document.getElementById('q'), 'skill-suggestions', options.skills);
     fillSuggestions(document.getElementById('location'), 'location-suggestions', options.locations);
+    showIndustryChips(options.industries);
   } catch (error) {
     // Not signed in or service down: the search itself shows the message.
   }
 }
 
+// On phones the filters start folded so the results are visible first.
+if (window.matchMedia('(max-width: 900px)').matches) {
+  document.getElementById('filters-box').open = false;
+}
+
+showRecent();
 loadFilterOptions();
 search(1);
