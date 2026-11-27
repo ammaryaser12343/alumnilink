@@ -33,7 +33,6 @@ async function loadAudience() {
     for (const input of fields) input.checked = privacy[input.name] === true;
     form.hidden = false;
     audienceForm.hidden = false;
-    document.getElementById("contact-privacy").hidden = false;
     if (location.hash === "#photo-visibility") audienceForm.scrollIntoView();
     await loadAudience();
   } catch (error) {
@@ -55,7 +54,7 @@ form.addEventListener("submit", async (event) => {
   const choices = Object.fromEntries(fields.map((input) => [input.name, input.checked]));
   try {
     await request("/api/profiles/me/privacy", "PATCH", choices);
-    message("Privacy choices saved.", false, detailsStatus);
+    message("Details saved.", false, detailsStatus);
   } catch (error) {
     message(error.message, true, detailsStatus);
   } finally {

@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Your directory privacy | AlumniLink</title>
+    <title>Privacy | AlumniLink</title>
     <link rel="icon" type="image/png" href="alumnilink-badge.png">
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="css/profile.css" />
@@ -27,57 +27,51 @@
     <main class="settings-page">
       <header class="settings-heading">
         <h2>Privacy</h2>
-        <p>Choose what people can see when they find you in the alumni directory.</p>
       </header>
       <p class="settings-notice" id="status" role="status"></p>
       <div class="settings-grid privacy-grid">
-        <div class="settings-stack">
-          <form class="settings-panel" id="privacy" hidden>
-            <div class="settings-panel-body">
-              <fieldset class="settings-fieldset">
-                <legend>Directory details</legend>
-                <p class="settings-help">Turn on the details you want directory members to see or search.</p>
-                <div class="privacy-fields">
-                  <label><span>Graduation year</span><input type="checkbox" name="graduation_year" /></label>
-                  <label><span>Company</span><input type="checkbox" name="company" /></label>
-                  <label><span>Industry</span><input type="checkbox" name="industry" /></label>
-                  <label><span>Location</span><input type="checkbox" name="location" /></label>
-                  <label><span>Bio</span><input type="checkbox" name="bio" /></label>
-                  <label><span>Skills</span><input type="checkbox" name="skills" /></label>
-                </div>
-              </fieldset>
-              <p class="settings-notice" id="details-status" role="status"></p>
-            </div>
-            <div class="settings-panel-footer settings-actions">
-              <button type="submit">Save privacy choices</button>
-              <button id="select-all-privacy" class="secondary" type="button">Select all</button>
-            </div>
-          </form>
-          <aside class="settings-note" id="contact-privacy" hidden>
-            <h3>Contact email</h3>
-            <p>Your email is shared with the requester after you accept a contact request.</p>
-          </aside>
-        </div>
+        <form class="settings-panel" id="privacy" hidden>
+          <div class="settings-panel-body">
+            <fieldset class="settings-fieldset">
+              <legend>What people can see</legend>
+              <p class="settings-help">Turn on the details you want to share in the directory.</p>
+              <div class="privacy-fields">
+                <label><span>Graduation year</span><input type="checkbox" name="graduation_year" /></label>
+                <label><span>Company</span><input type="checkbox" name="company" /></label>
+                <label><span>Industry</span><input type="checkbox" name="industry" /></label>
+                <label><span>Location</span><input type="checkbox" name="location" /></label>
+                <label><span>Bio</span><input type="checkbox" name="bio" /></label>
+                <label><span>Skills</span><input type="checkbox" name="skills" /></label>
+              </div>
+            </fieldset>
+            <p class="settings-notice" id="details-status" role="status"></p>
+          </div>
+          <div class="settings-panel-footer settings-actions">
+            <button type="submit">Save details</button>
+            <button id="select-all-privacy" class="secondary" type="button">Select all</button>
+          </div>
+        </form>
         <form class="settings-panel" id="photo-visibility" hidden>
           <div class="settings-panel-body">
             <fieldset class="settings-fieldset">
-              <legend>Who can see your photo?</legend>
+              <legend>Who can see my photo?</legend>
+              <p class="settings-help">Only signed-in members can see a shared photo.</p>
               <div class="photo-audiences">
                 <label class="photo-audience">
                   <input type="radio" name="audience" value="private" checked disabled />
-                  <span><strong>Only me</strong><small>Hidden from the directory</small></span>
+                  <span>Only me</span>
                 </label>
                 <label class="photo-audience">
                   <input type="radio" name="audience" value="students" disabled />
-                  <span><strong>Students</strong><small>Signed-in students</small></span>
+                  <span>Students only</span>
                 </label>
                 <label class="photo-audience">
                   <input type="radio" name="audience" value="alumni" disabled />
-                  <span><strong>Alumni</strong><small>Signed-in alumni</small></span>
+                  <span>Alumni only</span>
                 </label>
                 <label class="photo-audience">
                   <input type="radio" name="audience" value="directory" disabled />
-                  <span><strong>Everyone in the directory</strong><small>Students, alumni and admins</small></span>
+                  <span>Everyone in the directory</span>
                 </label>
               </div>
             </fieldset>
@@ -85,7 +79,7 @@
           </div>
           <div class="settings-panel-footer settings-actions">
             <button type="submit" disabled>Save photo visibility</button>
-            <a class="settings-link" href="profile.html#profile-photo">Manage photo</a>
+            <a class="settings-link" href="profile.html#profile-photo">Change photo</a>
           </div>
         </form>
       </div>

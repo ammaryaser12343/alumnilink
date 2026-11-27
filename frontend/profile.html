@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Your professional profile | AlumniLink</title>
+    <title>My profile | AlumniLink</title>
     <link rel="icon" type="image/png" href="alumnilink-badge.png">
     <link rel="stylesheet" href="css/styles.css" />
     <link rel="stylesheet" href="css/profile.css" />
@@ -28,61 +28,50 @@
     <main class="settings-page">
       <header class="settings-heading">
         <h2>My profile</h2>
-        <p>Keep your professional details up to date for the alumni directory.</p>
       </header>
       <p class="settings-notice" id="status" role="status"></p>
       <div class="settings-grid">
-        <div class="settings-stack">
-          <section class="settings-panel profile-photo" id="profile-photo" aria-labelledby="photo-title" hidden>
-            <div class="profile-photo-stage">
-              <div class="photo-frame">
-                <span class="photo-placeholder" aria-hidden="true"></span>
-                <img id="photo-preview" alt="Your profile photo" width="128" height="128" hidden />
+        <section class="settings-panel profile-photo" id="profile-photo" aria-labelledby="photo-title" hidden>
+          <div class="profile-photo-stage">
+            <div class="photo-frame">
+              <span class="photo-placeholder" aria-hidden="true"></span>
+              <img id="photo-preview" alt="Your profile photo" width="128" height="128" hidden />
+            </div>
+          </div>
+          <div class="settings-panel-body photo-controls">
+            <h3 id="photo-title">Profile photo</h3>
+            <p id="photo-file-detail" class="settings-help">JPEG or PNG, up to 2 MB</p>
+            <form id="photo-upload">
+              <div class="settings-actions">
+                <span class="photo-picker">
+                  <span aria-hidden="true">Choose photo</span>
+                  <input id="photo-file" type="file" accept="image/jpeg,image/png" aria-label="Choose photo" disabled />
+                </span>
+                <button type="submit" disabled hidden>Upload photo</button>
               </div>
-            </div>
-            <div class="settings-panel-body photo-controls">
-              <h3 id="photo-title">Profile photo</h3>
-              <p id="photo-file-detail" class="settings-help">JPEG or PNG up to 2 MB</p>
-              <form id="photo-upload">
-                <div class="settings-actions">
-                  <span class="photo-picker">
-                    <span aria-hidden="true">Choose photo</span>
-                    <input id="photo-file" type="file" accept="image/jpeg,image/png" aria-label="Choose photo" disabled />
-                  </span>
-                  <button type="submit" disabled hidden>Upload photo</button>
-                </div>
-                <button id="remove-photo" type="button" class="settings-text-button" hidden>Remove photo</button>
-              </form>
-              <p class="settings-notice" id="photo-status" role="status"></p>
-            </div>
-            <div class="settings-panel-footer" id="photo-privacy-link" hidden>
-              <a class="settings-link" href="privacy.html#photo-visibility">Manage photo visibility <span aria-hidden="true">&#8594;</span></a>
-            </div>
-          </section>
-          <section class="settings-panel settings-panel-body profile-directory" id="profile-directory" aria-labelledby="directory-title" hidden>
-            <h3 id="directory-title">Directory status</h3>
-            <p id="active-state"></p>
-            <p class="settings-help">A hidden profile stays editable and is excluded from directory results.</p>
-            <button id="toggle-profile" type="button" class="secondary">Deactivate profile</button>
-            <p class="settings-notice" id="profile-directory-status" role="status"></p>
-          </section>
-        </div>
+              <button id="remove-photo" type="button" class="settings-text-button" hidden>Remove photo</button>
+            </form>
+            <p class="settings-notice" id="photo-status" role="status"></p>
+          </div>
+          <div class="settings-panel-footer" id="photo-privacy-link" hidden>
+            <a class="settings-link" href="privacy.html#photo-visibility">Who can see my photo? <span aria-hidden="true">&#8594;</span></a>
+          </div>
+        </section>
         <form class="settings-panel" id="profile" hidden>
           <section class="settings-panel-body">
-            <h3>Professional details</h3>
+            <h3>Work and education</h3>
             <div class="profile-fields">
               <label>Graduation year<input name="graduationYear" type="number" min="1950" required /></label>
               <label>Company<input name="company" maxlength="100" /></label>
               <label>Industry<input name="industry" maxlength="50" /></label>
-              <label>Location<input name="location" maxlength="100" placeholder="City, country" aria-describedby="location-help" /></label>
+              <label>Location<input name="location" maxlength="100" placeholder="City, country" /></label>
             </div>
-            <p id="location-help" class="settings-help">Leave location blank to clear your saved city.</p>
           </section>
           <section class="settings-panel-body">
             <h3>About you</h3>
             <div class="profile-fields">
               <label class="profile-field-wide">Bio<textarea name="bio" maxlength="500" rows="4"></textarea></label>
-              <label class="profile-field-wide">Skills<input name="skills" maxlength="1000" aria-describedby="skills-help" /></label>
+              <label class="profile-field-wide">Skills<input name="skills" maxlength="1000" placeholder="e.g. Python, design, teaching" aria-describedby="skills-help" /></label>
             </div>
             <p id="skills-help" class="settings-help">Separate skills with commas.</p>
           </section>
@@ -91,10 +80,13 @@
             <div class="profile-fields">
               <label class="profile-field-wide">Contact email<input name="contactEmail" type="email" maxlength="254" aria-describedby="contact-help" /></label>
             </div>
-            <p id="contact-help" class="settings-help">Shared with the requester after you accept a contact request.</p>
+            <p id="contact-help" class="settings-help">We share this email when you accept a contact request.</p>
           </section>
-          <div class="settings-panel-footer settings-actions">
-            <button type="submit">Save profile</button>
+          <div class="settings-panel-footer">
+            <div class="settings-actions profile-actions">
+              <button type="submit">Save profile</button>
+              <button id="toggle-profile" type="button" class="secondary" hidden>Deactivate profile</button>
+            </div>
             <p class="settings-notice" id="profile-save-status" role="status"></p>
           </div>
         </form>
