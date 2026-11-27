@@ -6,10 +6,14 @@ const TURNSTILE_SITE_KEY = isLocal ? '1x00000000000000000000AA' : '0x4AAAAAAGUCq
 
 let turnstileWidgetId = null;
 
-// Draws the widget inside the element (e.g. '#turnstile-widget').
+// Draws the widget inside the element (e.g. '#turnstile-widget'),
+// in dark or light to match the page (js/theme.js).
 function renderTurnstile(selector) {
   if (window.turnstile) {
-    turnstileWidgetId = window.turnstile.render(selector, { sitekey: TURNSTILE_SITE_KEY });
+    turnstileWidgetId = window.turnstile.render(selector, {
+      sitekey: TURNSTILE_SITE_KEY,
+      theme: document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light'
+    });
   }
 }
 
