@@ -11,17 +11,9 @@
   margin-bottom: 1.55rem;
 }
 .settings-heading h2 {
-  margin-bottom: .4rem;
+  margin: 0;
   font-size: clamp(2rem, 4vw, 2.75rem);
   letter-spacing: -.025em;
-}
-.settings-heading p,
-.settings-help {
-  color: var(--muted);
-}
-.settings-heading p {
-  max-width: 60ch;
-  margin: 0;
 }
 .settings-grid {
   display: grid;
@@ -31,10 +23,6 @@
 }
 .privacy-grid {
   grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
-}
-.settings-stack {
-  display: grid;
-  gap: 1.25rem;
 }
 .settings-panel {
   min-width: 0;
@@ -49,8 +37,7 @@
   padding: var(--settings-padding);
 }
 .settings-panel h3,
-.settings-fieldset legend,
-.settings-note h3 {
+.settings-fieldset legend {
   margin: 0;
   color: var(--ink);
   font: 600 1.3rem / 1.25 var(--font-head);
@@ -59,12 +46,9 @@
 .settings-panel-footer {
   border-top: 1px solid var(--border);
 }
-.settings-panel-footer.settings-actions,
-#profile-save-status {
-  margin: 0;
-}
 .settings-help {
   margin: .55rem 0 0;
+  color: var(--muted);
   font-size: .895rem;
 }
 .settings-actions {
@@ -72,6 +56,13 @@
   flex-wrap: wrap;
   align-items: center;
   gap: .65rem;
+}
+.profile-actions {
+  justify-content: space-between;
+}
+.profile-actions .secondary {
+  border-color: var(--field);
+  color: var(--muted);
 }
 .settings-link {
   color: var(--blue-dark);
@@ -226,33 +217,6 @@
   background: transparent;
   color: var(--bad);
 }
-#active-state {
-  display: inline-flex;
-  align-items: center;
-  gap: .4rem;
-  margin: .75rem 0 0;
-  padding: .24rem .65rem;
-  border-radius: 999px;
-  background: var(--soft);
-  color: var(--muted);
-  font-size: .86rem;
-  font-weight: 600;
-}
-#active-state::before {
-  width: .42rem;
-  height: .42rem;
-  border-radius: 50%;
-  background: currentColor;
-  content: "";
-}
-#active-state.is-active {
-  background: var(--good-bg);
-  color: var(--good);
-}
-.profile-directory button {
-  margin-top: .95rem;
-}
-
 .settings-fieldset {
   min-inline-size: 0;
   margin: 0;
@@ -317,21 +281,26 @@
 }
 .photo-audiences {
   display: grid;
-  gap: .55rem;
+  gap: .25rem;
   margin-top: .85rem;
 }
 .photo-audience {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: .7rem;
-  padding: .72rem .8rem;
-  border: 1px solid var(--border);
-  border-radius: .7rem;
+  min-height: 3rem;
+  padding: .55rem .8rem;
+  border: 1px solid transparent;
+  border-radius: .65rem;
   cursor: pointer;
 }
+.photo-audience:hover {
+  background: var(--soft);
+}
 .photo-audience:has(input:checked) {
-  border-color: var(--blue);
+  border-color: #c2dff0;
   background: #edf7fe;
+  font-weight: 600;
 }
 .photo-audience input {
   flex: 0 0 auto;
@@ -339,26 +308,8 @@
   height: 1rem;
   min-height: 0;
   padding: 0;
-  margin: .24rem 0 0;
+  margin: 0;
   accent-color: var(--blue);
-}
-.photo-audience small {
-  display: block;
-  color: var(--muted);
-}
-.settings-note {
-  padding: 1rem var(--settings-padding);
-  border: 1px solid var(--border);
-  border-radius: .85rem;
-  background: #f8fbff;
-}
-.settings-note h3 {
-  font-size: 1.1rem;
-}
-.settings-note p {
-  margin: .3rem 0 0;
-  color: var(--muted);
-  font-size: .9rem;
 }
 
 @media (max-width: 46rem) {

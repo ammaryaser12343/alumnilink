@@ -31,7 +31,7 @@ window.profilePhoto = (() => {
     input.disabled = busy || !available;
     upload.hidden = !input.files.length;
     upload.disabled = input.disabled || upload.hidden;
-    fileDetail.textContent = input.files[0]?.name || "JPEG or PNG up to 2 MB";
+    fileDetail.textContent = input.files[0]?.name || "JPEG or PNG, up to 2 MB";
     remove.disabled = input.disabled;
     remove.hidden = !saved;
     upload.textContent = saved ? "Replace photo" : "Upload photo";
