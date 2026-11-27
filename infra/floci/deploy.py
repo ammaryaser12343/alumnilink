@@ -131,6 +131,7 @@ def deploy_frontend(api_url):
     assets = {
         "index.html": "text/html", "requests.html": "text/html",
         "profile.html": "text/html", "privacy.html": "text/html",
+        "alumnilink-badge.png": "image/png",
         "css/styles.css": "text/css", "css/profile.css": "text/css",
         "js/config.js": "text/javascript", "js/api.js": "text/javascript",
         "js/search.js": "text/javascript", "js/requests.js": "text/javascript",
