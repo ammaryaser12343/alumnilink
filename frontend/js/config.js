@@ -1,5 +1,5 @@
 // On your laptop the page calls the local APIs; on Vercel it calls the deployed ones.
-// Replace each YOUR-...-PROJECT with the real Vercel domain after deploying (Lab 5).
+// The deployed addresses below are the three backends' Vercel domains.
 // These addresses are not secrets. Never put DATABASE_URL or TOKEN_SECRET in frontend code.
 const isLocal = ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
