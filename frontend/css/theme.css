@@ -34,11 +34,15 @@
 [data-theme="dark"] select,
 [data-theme="dark"] textarea,
 [data-theme="dark"] .chip { background-color: var(--card); }
-[data-theme="dark"] .search-hero { background: linear-gradient(120deg, #0c2d48, #0f1f35 60%, var(--card)); border-color: #164e72; }
-[data-theme="dark"] .filter-pill { border-color: #164e72; }
 [data-theme="dark"] .filter-pill:hover,
 [data-theme="dark"] .tag-button:hover { background: #123a5c; }
 [data-theme="dark"] dialog { background: var(--card); color: var(--text); }
+
+/* Profile and Privacy pages: the light colours written directly in profile.css */
+[data-theme="dark"] .profile-photo-stage { background: var(--soft); }
+[data-theme="dark"] .photo-frame { border-color: var(--card); background: var(--field); }
+[data-theme="dark"] .privacy-fields input:not(:checked) { border-color: var(--field); background: var(--soft); }
+[data-theme="dark"] .photo-audience:has(input:checked) { border-color: #164e72; background: var(--blue-soft); }
 
 /* The small moon/sun button at the right end of the top menu */
 .site-header nav .theme-toggle {
@@ -52,4 +56,4 @@
   font-size: 1.15rem;
   line-height: 1;
 }
-.site-header nav .theme-toggle:hover { background: var(--soft); border-color: var(--blue); }
+.site-header nav .theme-toggle:hover { background: var(--soft); border-color: var(--blue); }

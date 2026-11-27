@@ -88,6 +88,7 @@ a { color: var(--blue); }
   flex: 0 0 2.5rem;
   height: 2.5rem;
   background: url('../alumnilink-badge.png') center / contain no-repeat;
+  border-radius: 50%;   /* the logo file has white corners; this hides them on dark backgrounds */
 }
 
 .site-header nav { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0.25rem; align-self: stretch; }
