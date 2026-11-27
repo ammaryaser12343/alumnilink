@@ -3,6 +3,32 @@
 // On success it keeps the badge (token) in sessionStorage under "token", where
 // Ammar's apiRequest() and Ahmed's profile pages look for it, then goes to the
 // right page for the role.
+// The site's home address (/) redirects here (frontend/vercel.json), so visitors
+// see the login page first.
+
+// Already logged in with a badge that has not expired? Skip the form and go straight in.
+// This only decides which page to show: every API still checks the badge itself.
+function savedLogin() {
+  const token = sessionStorage.getItem('token');
+  if (!token) return null;
+  try {
+    const body = token.split('.')[0].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(atob(body));
+    if (!payload.exp || payload.exp * 1000 <= Date.now()) throw new Error('expired');
+    return payload;
+  } catch {
+    // Broken or expired badge: forget it so the person can log in again.
+    sessionStorage.removeItem('token');
+    sessionStorage.removeItem('userName');
+    return null;
+  }
+}
+
+const saved = savedLogin();
+if (saved) {
+  window.location.replace(saved.role === 'admin' ? 'admin.html' : 'index.html');
+}
+
 const form = document.getElementById('login-form');
 const statusBox = document.getElementById('status');
 const button = document.getElementById('login-button');
