@@ -11,6 +11,8 @@ CREATE TABLE IF NOT EXISTS alumni_profiles (
 ALTER TABLE alumni_profiles ADD COLUMN IF NOT EXISTS contact_email varchar(254);
 ALTER TABLE alumni_profiles ADD COLUMN IF NOT EXISTS location_id integer REFERENCES locations(id);
 ALTER TABLE alumni_profiles ADD COLUMN IF NOT EXISTS location varchar(100);
+ALTER TABLE alumni_profiles ADD COLUMN IF NOT EXISTS photo_audience varchar(12) NOT NULL DEFAULT 'private'
+ CHECK (photo_audience IN ('private','alumni','students','directory'));
 CREATE TABLE IF NOT EXISTS skills (
  id serial PRIMARY KEY, name varchar(50) NOT NULL UNIQUE CHECK (name = lower(name))
 );

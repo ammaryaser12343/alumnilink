@@ -62,7 +62,9 @@ const MAX_SKILLS_SHOWN = 5;
 function renderCard(alumnus) {
   // Row: initials | name, company, meta line, bio, skills | button (added by renderResults)
   const card = element('article', 'result-card');
-  card.append(element('span', 'avatar', initials(alumnus.name)));
+  const avatar = element('span', 'avatar', initials(alumnus.name));
+  avatar.setAttribute('aria-hidden', 'true');
+  card.append(avatar);
 
   const main = element('div', 'card-main');
   const title = element('div', 'card-title');
@@ -125,8 +127,10 @@ function renderEmptyState(text) {
 
 function renderResults(results) {
   resultsBox.replaceChildren();
+  const avatars = new Map();
   results.forEach((alumnus) => {
     const card = renderCard(alumnus);
+    avatars.set(alumnus.id, card.querySelector('.avatar'));
 
     // Students and alumni can ask an alum for contact details, but not on their own card.
     if (user && (user.role === 'student' || user.role === 'alumni') && !alumnus.isMine) {
@@ -141,6 +145,26 @@ function renderResults(results) {
 
     resultsBox.append(card);
   });
+  loadDirectoryPhotos(avatars);
+}
+
+async function loadDirectoryPhotos(avatars) {
+  if (!avatars.size) return;
+  const profileBase = window.ALUMNILINK?.PROFILE_API_URL ?? API.profile.replace(/\/api\/?$/, '');
+  const query = new URLSearchParams({ ids: [...avatars.keys()].join(',') });
+  try {
+    const { photos } = await apiRequest(`${profileBase}/api/profiles/directory/photos?${query}`);
+    for (const [id, encoded] of Object.entries(photos)) {
+      const avatar = avatars.get(id);
+      if (!avatar?.isConnected) continue;
+      const image = document.createElement('img');
+      image.alt = '';
+      image.src = 'data:image/webp;base64,' + encoded;
+      avatar.replaceChildren(image);
+    }
+  } catch {
+    // Directory cards retain their initials if photos are unavailable.
+  }
 }
 
 // Grey placeholder rows shown while the results load.

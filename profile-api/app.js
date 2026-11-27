@@ -3,7 +3,7 @@ const cors = require("cors");
 const express = require("express");
 const { createProfilesRouter } = require("./routes/profiles");
 const { createInternalRouter } = require("./routes/internal");
-const { createActiveAccountCheck, createAlumniAccess } = require("./middleware/activeAccount");
+const { createActiveAccountCheck, createAlumniAccess, createDirectoryAccess } = require("./middleware/activeAccount");
 const { ApiError } = require("./errors");
 const { createRuntimeOptions } = require("./runtime");
 
@@ -11,6 +11,7 @@ function createApp({
   store,
   identity,
   locations,
+  photos,
   config = {},
   logger = console,
 }) {
@@ -46,7 +47,7 @@ function createApp({
     app.use(
       cors({
         origin: config.frontendOrigin,
-        methods: ["GET", "POST", "PATCH", "PUT"],
+        methods: ["GET", "POST", "PATCH", "PUT", "DELETE"],
         allowedHeaders: ["Authorization", "Content-Type"],
         exposedHeaders: ["X-Request-Id"],
       }),
@@ -62,6 +63,9 @@ function createApp({
         "/api/profiles/me/skills",
         "/api/profiles/me/privacy",
         "/api/profiles/me/status",
+        "/api/profiles/me/photo",
+        "/api/profiles/me/photo/audience",
+        "/api/profiles/directory/photos",
       ],
     }),
   );
@@ -71,7 +75,8 @@ function createApp({
 
   const requireActiveAccount = createActiveAccountCheck(identity);
   const requireAlumni = createAlumniAccess(requireActiveAccount);
-  app.use(createProfilesRouter({ store, locations, requireAlumni }));
+  const requireDirectoryUser = createDirectoryAccess(requireActiveAccount);
+  app.use(createProfilesRouter({ store, locations, photos, requireAlumni, requireDirectoryUser }));
   app.use(createInternalRouter({ store, identity, requireActiveAccount, serviceKey: config.serviceKey }));
 
   app.use((_req, _res, next) =>

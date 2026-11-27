@@ -1,5 +1,6 @@
 const { ApiError } = require("../errors");
 const validate = require("../validation");
+const { resizePhoto } = require("../services/photoStore");
 
 function requireProfile(value) {
   if (!value)
@@ -7,7 +8,19 @@ function requireProfile(value) {
   return value;
 }
 
-function createProfilesController({ store, locations }) {
+function createProfilesController({ store, locations, photos }) {
+  async function withPhotoStore(operation) {
+    if (!photos) {
+      throw new ApiError(503, "PHOTO_STORAGE_NOT_CONFIGURED", "Photo storage is not configured on this deployment.");
+    }
+    try {
+      return await operation();
+    } catch (error) {
+      if (error instanceof ApiError) throw error;
+      throw new ApiError(503, "PHOTO_STORAGE_UNAVAILABLE", "Photo storage is unavailable. Please retry.");
+    }
+  }
+
   async function resolvedDetails(req, create = false) {
     const details = validate.profile(req.body, create);
     if (Object.hasOwn(details, "location") && details.location !== null) {
@@ -34,6 +47,42 @@ function createProfilesController({ store, locations }) {
   }
 
   return {
+    async getPhotoAudience(req, res) {
+      res.json({ audience: requireProfile(await store.getPhotoAudience(req.userId)) });
+    },
+    async updatePhotoAudience(req, res) {
+      const audience = validate.photoAudience(req.body);
+      res.json({ audience: requireProfile(await store.setPhotoAudience(req.userId, audience)) });
+    },
+    async getDirectoryPhotos(req, res) {
+      const ids = validate.directoryPhotoIds(req.query.ids);
+      const visible = photos ? await store.findDirectoryPhotoIds(ids, req.directoryRole) : [];
+      const entries = await Promise.all(visible.map(async (id) => {
+        const photo = await withPhotoStore(() => photos.read(id));
+        return photo ? [id, photo.toString("base64")] : null;
+      }));
+      res.json({ photos: Object.fromEntries(entries.filter(Boolean)) });
+    },
+    async getPhoto(req, res) {
+      const { id } = requireProfile(await store.findProfile(req.userId));
+      const photo = await withPhotoStore(() => photos.read(id));
+      if (!photo) return res.status(204).end();
+      res.type("webp").send(photo);
+    },
+    async savePhoto(req, res) {
+      const { id } = requireProfile(await store.findProfile(req.userId));
+      const photo = await withPhotoStore(async () => {
+        const thumbnail = await resizePhoto(req.body, req.is(["image/jpeg", "image/png"]));
+        await photos.save(id, thumbnail);
+        return thumbnail;
+      });
+      res.type("webp").send(photo);
+    },
+    async removePhoto(req, res) {
+      const { id } = requireProfile(await store.findProfile(req.userId));
+      await withPhotoStore(() => photos.remove(id));
+      res.status(204).end();
+    },
     async createProfile(req, res) {
       res
         .status(201)

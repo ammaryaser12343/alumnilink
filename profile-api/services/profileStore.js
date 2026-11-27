@@ -47,6 +47,33 @@ async function replaceSkills(db, profileId, names) {
 function createStore(db) {
   return {
     findProfile: (userId) => readProfile(db, userId),
+    async getPhotoAudience(userId) {
+      const { rows } = await db.query(
+        "SELECT photo_audience FROM alumni_profiles WHERE user_id=$1",
+        [userId],
+      );
+      return rows[0]?.photo_audience;
+    },
+    async setPhotoAudience(userId, audience) {
+      const { rows } = await db.query(
+        "UPDATE alumni_profiles SET photo_audience=$2 WHERE user_id=$1 RETURNING photo_audience",
+        [userId, audience],
+      );
+      return rows[0]?.photo_audience;
+    },
+    async findDirectoryPhotoIds(profileIds, role) {
+      const { rows } = await db.query(
+        `SELECT p.id FROM alumni_profiles p
+        JOIN users u ON u.id=p.user_id
+        WHERE p.id=ANY($1::uuid[]) AND p.is_active
+          AND u.role='alumni' AND u.account_status='active'
+          AND (p.photo_audience='directory'
+            OR (p.photo_audience='alumni' AND $2='alumni')
+            OR (p.photo_audience='students' AND $2='student'))`,
+        [profileIds, role],
+      );
+      return rows.map(({ id }) => id);
+    },
     saveProfile(userId, changes, create = false) {
       return db.transaction(async (tx) => {
         let profileId;

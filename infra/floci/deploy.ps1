@@ -23,7 +23,7 @@ try {
   'controllers/internal.js','controllers/profiles.js',
   'middleware/activeAccount.js','middleware/auth.js',
   'routes/internal.js','routes/profiles.js',
-  'services/db.js','services/profileStore.js','services/serviceClient.js'
+  'services/db.js','services/profileStore.js','services/serviceClient.js','services/photoStore.js'
  )
  foreach ($name in $files) {
   $destination=Join-Path $bundle $name
@@ -34,7 +34,7 @@ try {
  New-Item -ItemType Directory -Path $sharedBundle -Force | Out-Null
  foreach ($name in @('auth.js','errors.js')) { Copy-Item -LiteralPath (Join-Path $project ('shared/' + $name)) -Destination $sharedBundle }
  Push-Location -LiteralPath $bundle
- try { npm.cmd ci --omit=dev --ignore-scripts --no-audit --no-fund } finally { Pop-Location }
+ try { npm.cmd ci --omit=dev --ignore-scripts --no-audit --no-fund --os=linux --cpu=x64 --libc=glibc } finally { Pop-Location }
  $archive=Join-Path $build 'accounts.zip'
  Push-Location -LiteralPath $build
  try { tar.exe -a -cf $archive -- profile-api shared } finally { Pop-Location }
