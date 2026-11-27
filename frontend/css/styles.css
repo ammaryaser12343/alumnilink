@@ -160,92 +160,95 @@ input:focus, select:focus, textarea:focus {
 textarea { resize: vertical; }
 
 /* ---------- 6. Search page layout ---------- */
-/* Top: a blue band with the main search bar, recent searches and industry chips */
+/* Kept plain on purpose: white surfaces, thin grey lines, one blue for actions. */
+
+/* Top: title, a short intro, the search bar and the quick-pick rows */
 .search-hero {
-  margin: 0 0 1.5rem;
-  padding: 1.75rem clamp(1rem, 3vw, 2rem);
-  border-radius: var(--radius);
-  background: linear-gradient(120deg, #e0f2fe, #f0f9ff 60%, var(--card));
-  border: 1px solid #bae6fd;
+  margin: 0 0 1.75rem;
+  padding: 0 0 1.5rem;
+  border-bottom: 1px solid var(--border);
+  scroll-margin-top: 80px;      /* when a tag click scrolls back up, stop below the sticky header */
 }
 .search-hero h2 { margin-bottom: 0.25rem; }
-/* When a tag click scrolls back up, stop below the sticky header */
-.search-hero { scroll-margin-top: 80px; }
-.search-hero .page-intro { margin-bottom: 1.25rem; }
+.search-hero .page-intro { margin-bottom: 0.35rem; }
 
-.search-bar { display: flex; gap: 0.5rem; max-width: 760px; }
+/* "23 alumni · 4 industries · 12 cities" */
+.directory-stats { margin: 0 0 1.25rem; color: var(--muted); font-size: 0.9rem; }
+.directory-stats[hidden] { display: none; }
+.directory-stats strong { color: var(--text); font-weight: 600; }
+.stat-dot { margin: 0 0.4rem; }
+
+.search-bar { display: flex; gap: 0.5rem; max-width: 720px; }
 .search-input { position: relative; flex: 1; display: flex; }
 .search-bar input {
   flex: 1;
-  padding-right: 2.75rem;
-  min-height: 52px;
-  padding-left: 2.75rem;
-  font-size: 1.05rem;
-  border-radius: 999px;
+  min-height: 48px;
+  padding: 0 2.75rem;
+  font-size: 1rem;
+  border-radius: 8px;
   /* magnifying glass drawn as a small SVG, so no icon font is needed */
-  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") 1rem center / 1.2rem no-repeat;
+  background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23475569' stroke-width='2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20 20l-4-4'/%3E%3C/svg%3E") 0.9rem center / 1.1rem no-repeat;
 }
-.search-bar button { min-height: 52px; padding: 0 1.75rem; }
+.search-bar button { min-height: 48px; padding: 0 1.5rem; border-radius: 8px; }
 
 /* The small "/" key shown inside the search box; hidden once you start typing */
 .key-hint {
-  position: absolute; right: 1rem; top: 50%; transform: translateY(-50%);
-  min-width: 1.5rem; padding: 0.05rem 0.4rem; text-align: center;
-  border: 1px solid var(--field); border-bottom-width: 2px; border-radius: 6px;
-  background: var(--soft); color: var(--muted); font-family: inherit; font-size: 0.8rem; font-weight: 600; line-height: 1.4; pointer-events: none;
+  position: absolute; right: 0.9rem; top: 50%; transform: translateY(-50%);
+  padding: 0 0.4rem; border: 1px solid var(--field); border-radius: 4px;
+  color: var(--muted); font-family: inherit; font-size: 0.75rem; line-height: 1.4; pointer-events: none;
 }
 .search-input input:focus + .key-hint,
 .search-input input:not(:placeholder-shown) + .key-hint { display: none; }
 
-/* "23 alumni · 4 industries · 12 cities" */
-.directory-stats { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: -0.5rem 0 1.25rem; color: var(--muted); font-size: 0.95rem; }
-.directory-stats[hidden] { display: none; }
-.directory-stats strong { color: var(--ink); font-size: 1.05rem; }
-.stat-dot { color: var(--muted); }
-
-/* Filters in use, shown above the results */
-.active-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin: -0.25rem 0 1rem; }
-.active-filters[hidden] { display: none; }
-.filter-pill {
-  display: inline-flex; align-items: center; gap: 0.4rem;
-  min-height: 36px; padding: 0 0.6rem 0 0.9rem;
-  background: var(--blue-soft); border-color: #bae6fd; color: var(--blue-dark); font-weight: 500; font-size: 0.9rem;
-}
-.filter-pill:hover { background: #e0f2fe; border-color: var(--blue); }
-.pill-x { font-size: 1.1rem; line-height: 1; }
-
-/* Rows of small round buttons: recent searches and industries */
-.chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.85rem; }
+/* Quick-pick rows under the search bar: recent searches and industries */
+.chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.75rem; margin-top: 0.9rem; }
 .chip-row[hidden] { display: none; }
-.chip-label { font-size: 0.8rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); min-width: 5.5rem; }
-.chip-list { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.chip-label { font-size: 0.875rem; color: var(--muted); }
+.chip-list { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .chip {
-  min-height: 36px;
-  padding: 0 0.9rem;
-  font-size: 0.875rem;
-  font-weight: 500;
+  min-height: 32px;
+  padding: 0 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
   background: #fff;
   color: var(--text);
-  border: 1px solid var(--field);
+  font-size: 0.875rem;
+  font-weight: 500;
 }
-.chip:hover { background: var(--blue-soft); border-color: var(--blue); color: var(--blue); }
-.chip[aria-pressed="true"] { background: var(--blue); border-color: var(--blue); color: #fff; }
+.chip:hover { background: var(--soft); border-color: var(--field); color: var(--ink); }
+.chip[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: #fff; }
+/* Recent searches look like plain links, so they read as history, not as filters */
+#recent-list .chip { padding: 0 0.25rem; border: 0; background: none; color: var(--blue); text-decoration: underline; text-underline-offset: 3px; }
+#recent-list .chip:hover { color: var(--blue-dark); }
 
 /* A button that looks like a link (for "Clear") */
-.link-button { min-height: 36px; padding: 0 0.5rem; background: none; border: 0; color: var(--blue); font-weight: 500; text-decoration: underline; }
-.link-button:hover { background: none; color: var(--blue-dark); }
+.link-button { min-height: 32px; padding: 0 0.25rem; background: none; border: 0; color: var(--muted); font-size: 0.875rem; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; }
+.link-button:hover { background: none; color: var(--ink); }
+
+/* Filters in use, shown above the results */
+.active-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem; margin: 0 0 0.85rem; }
+.active-filters[hidden] { display: none; }
+.filter-pill {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  min-height: 32px; padding: 0 0.5rem 0 0.75rem;
+  background: #fff; border: 1px solid var(--field); border-radius: 6px;
+  color: var(--text); font-size: 0.875rem; font-weight: 500;
+}
+.filter-pill:hover { background: var(--soft); border-color: var(--muted); }
+.pill-x { color: var(--muted); font-size: 1rem; line-height: 1; }
 
 /* Below: filters on the left, results on the right */
 .search-layout {
   display: grid;
-  grid-template-columns: 260px 1fr;
-  gap: 1.5rem;
+  grid-template-columns: 250px 1fr;
+  gap: 1.75rem;
   align-items: start;
 }
 
 /* The filters stay in view while the results scroll (the header is about 57px tall) */
 .filters { position: sticky; top: 73px; }
-.filters h3 { margin: 0 0 0.75rem; font-size: 1.1rem; }
+.filters h3 { margin: 0 0 0.75rem; font-size: 1rem; }
+.filters .search-form { padding: 1.25rem; box-shadow: none; }
 
 /* The Filters title is a <summary>; on wide screens it is a plain heading */
 .filters summary { list-style: none; }
@@ -261,10 +264,10 @@ textarea { resize: vertical; }
 .results-column { min-width: 0; }
 
 /* "23 alumni found" on the left, Sort on the right */
-.results-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 1rem; }
-.results-header .message { margin: 0; color: var(--ink); font-weight: 600; font-size: 1.05rem; }
-.sort-control { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 600; color: var(--muted); }
-.sort-control select { width: auto; max-width: 220px; min-height: 40px; }
+.results-header { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.75rem; margin-bottom: 0.85rem; }
+.results-header .message { margin: 0; color: var(--ink); font-weight: 600; font-size: 1rem; }
+.sort-control { display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; font-weight: 500; color: var(--muted); }
+.sort-control select { width: auto; max-width: 220px; min-height: 38px; }
 
 /* Text only screen readers read (used for the search bar's label) */
 .visually-hidden { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
@@ -309,105 +312,90 @@ textarea { resize: vertical; }
   .near-me { grid-column: 1 / -1; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 }
 
-/* ---------- 8. Result cards ---------- */
-.results { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
-
-.result-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  padding: 1.25rem;
+/* ---------- 8. Search results ---------- */
+/* One white panel; each person is a row separated by a thin line (like a people search list). */
+.results {
   background: var(--card);
   border: 1px solid var(--border);
-  border-top: 3px solid var(--blue);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  transition: box-shadow 0.2s, transform 0.2s;
+  overflow: hidden;
 }
-.result-card:hover { box-shadow: var(--shadow-hover); transform: translateY(-2px); }
 
-/* Name with round initials beside it */
-.card-top { display: flex; align-items: center; gap: 0.85rem; }
+/* Row: initials | details | button */
+.result-card {
+  display: grid;
+  grid-template-columns: 48px 1fr auto;
+  gap: 0.35rem 1rem;
+  align-items: start;
+  padding: 1.25rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+.result-card:last-child { border-bottom: 0; }
+
 .avatar {
-  flex-shrink: 0;
   display: grid;
   place-items: center;
-  width: 52px;
-  height: 52px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: var(--blue-soft);
-  color: var(--blue);
-  font-family: var(--font-head);
-  font-weight: 700;
-  font-size: 1.15rem;
-}
-.card-title { min-width: 0; }
-.card-title h3 { margin: 0; font-size: 1.15rem; overflow-wrap: anywhere; }
-.card-company { margin: 0.1rem 0 0; color: var(--muted); font-size: 0.9rem; }
-
-.badges { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-.badge { padding: 0.15rem 0.6rem; border-radius: 999px; background: var(--soft); border: 1px solid var(--border); font-size: 0.8rem; font-weight: 500; color: var(--text); }
-
-/* Location with a small pin icon */
-.card-location {
-  margin: 0;
-  padding-left: 1.3rem;
-  font-size: 0.9rem;
-  color: var(--text);
-  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%230369a1'%3E%3Cpath d='M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z'/%3E%3C/svg%3E") left center / 1rem no-repeat;
+  background: var(--soft);
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 1rem;
 }
 
-/* Bio cut to three lines so cards stay the same height */
+.card-main { min-width: 0; display: grid; gap: 0.4rem; }
+.card-title h3 { margin: 0; font-family: var(--font-body); font-size: 1.05rem; font-weight: 600; overflow-wrap: anywhere; }
+.card-company { margin: 0; color: var(--text); font-size: 0.925rem; }
+
+/* "Software · Class of 2020 · Cairo" */
+.card-meta { margin: 0; color: var(--muted); font-size: 0.875rem; }
+.card-meta .sep { margin: 0 0.35rem; }
+
+/* Bio cut to two lines so rows stay short */
 .card-bio {
   margin: 0;
+  max-width: 70ch;
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--text);
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.skill-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; padding: 0; margin: 0; list-style: none; }
-.tag { padding: 0.1rem 0.55rem; border-radius: 6px; background: var(--blue-soft); color: var(--blue-dark); font-size: 0.8rem; font-weight: 500; }
-.tag-more { background: var(--soft); color: var(--muted); }
+.skill-tags { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0; margin: 0.15rem 0 0; list-style: none; }
+.tag { padding: 0.1rem 0.5rem; border-radius: 4px; background: var(--soft); color: var(--text); font-size: 0.8rem; }
+.tag-more { color: var(--muted); }
 
 /* Skill tags and the city are buttons that start a new search */
-.tag-button { min-height: 30px; border: 1px solid transparent; font: inherit; font-size: 0.8rem; font-weight: 500; }
-.tag-button:hover { background: #e0f2fe; border-color: var(--blue); color: var(--blue-dark); }
+.tag-button { min-height: 28px; border: 1px solid var(--soft); font: inherit; font-size: 0.8rem; font-weight: 400; }
+.tag-button:hover { background: #fff; border-color: var(--field); color: var(--ink); }
 .text-button {
   min-height: 0; padding: 0; border: 0; border-radius: 4px;
-  background: none; color: inherit; font: inherit; font-weight: 500;
-  text-decoration: underline dotted var(--muted); text-underline-offset: 3px;
+  background: none; color: inherit; font: inherit; font-weight: inherit;
+  text-decoration: underline; text-decoration-color: var(--field); text-underline-offset: 3px;
 }
 .text-button:hover { background: none; color: var(--blue); text-decoration-color: var(--blue); }
 
-/* Grey placeholder cards while results load */
-.skeleton { border-top-color: var(--border); }
-.skeleton:hover { box-shadow: var(--shadow); transform: none; }
-.bone { display: block; border-radius: 8px; background: var(--soft); animation: pulse 1.2s ease-in-out infinite; }
-.bone-avatar { width: 52px; height: 52px; border-radius: 50%; }
-.bone-line { height: 0.9rem; width: 80%; }
-.bone-line.short { width: 50%; }
-.bone-button { height: 44px; margin-top: auto; border-radius: 999px; }
-@keyframes pulse { 50% { opacity: 0.45; } }
-
-/* The button sits at the bottom so buttons line up across cards */
-.result-card .contact-button { margin-top: auto; width: 100%; background: transparent; color: var(--blue); }
+/* Request button on the right of the row */
+.result-card .contact-button { min-height: 36px; padding: 0 1rem; background: #fff; color: var(--blue); font-size: 0.9rem; }
 .result-card .contact-button:hover { background: var(--blue-soft); }
 /* "Request sent" / "Contact shared": greyed out, cannot be clicked again */
-.result-card .contact-button:disabled { background: var(--soft); border-color: var(--border); color: var(--muted); }
+.result-card .contact-button:disabled { background: #fff; border-color: var(--border); color: var(--muted); }
 
-/* Shown instead of cards when nothing matches */
-.empty-state {
-  grid-column: 1 / -1;
-  padding: 2.5rem 1.5rem;
-  text-align: center;
-  background: var(--card);
-  border: 1px dashed var(--field);
-  border-radius: var(--radius);
-}
-.empty-state h3 { margin: 0 0 0.4rem; font-size: 1.25rem; }
+/* Grey placeholder rows while results load */
+.bone { display: block; border-radius: 4px; background: var(--soft); animation: pulse 1.2s ease-in-out infinite; }
+.bone-avatar { width: 48px; height: 48px; border-radius: 50%; }
+.bone-lines { display: grid; gap: 0.5rem; padding-top: 0.3rem; }
+.bone-line { height: 0.8rem; width: 45%; }
+.bone-line.short { width: 70%; }
+.bone-button { width: 140px; height: 36px; border-radius: 999px; }
+@keyframes pulse { 50% { opacity: 0.5; } }
+
+/* Shown instead of rows when nothing matches */
+.empty-state { padding: 3rem 1.5rem; text-align: center; }
+.empty-state h3 { margin: 0 0 0.4rem; font-size: 1.15rem; }
 .empty-state p { margin: 0 auto 1.25rem; max-width: 46ch; color: var(--muted); }
 
 /* The request-card labels written by requests.js */
@@ -415,7 +403,7 @@ textarea { resize: vertical; }
 
 /* ---------- 9. Pager ---------- */
 .pager[hidden] { display: none; }
-.pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 2rem 0 0; color: var(--muted); }
+.pager { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 0.75rem 1rem; margin: 1.5rem 0 0; color: var(--muted); font-size: 0.9rem; }
 
 /* ---------- 10. Contact dialog ---------- */
 dialog {
@@ -467,7 +455,12 @@ dialog .message { margin: 0.75rem 0; font-weight: 400; }
   .search-form { padding: 1rem; }
   .search-bar { flex-direction: column; }
   .search-bar button { width: 100%; }
-  .chip-label { min-width: 0; width: 100%; }
+  .chip-label { width: 100%; }
+  .result-card { grid-template-columns: 40px 1fr; padding: 1rem; }
+  /* Page counter on its own line above Previous / Next */
+  #page-info { order: -1; width: 100%; text-align: center; }
+  .avatar, .bone-avatar { width: 40px; height: 40px; font-size: 0.9rem; }
+  .result-card .contact-button, .bone-button { grid-column: 1 / -1; width: 100%; margin-top: 0.5rem; }
   .key-hint { display: none; }
   .dialog-buttons button { flex: 1; }
 }
@@ -475,6 +468,5 @@ dialog .message { margin: 0.75rem 0; font-weight: 400; }
 /* People who ask their system for less motion get none */
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
-  .result-card:hover { transform: none; }
   .bone { animation: none; }
 }

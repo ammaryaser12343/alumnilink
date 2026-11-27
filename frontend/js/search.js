@@ -60,33 +60,36 @@ function initials(name) {
 const MAX_SKILLS_SHOWN = 5;
 
 function renderCard(alumnus) {
+  // Row: initials | name, company, meta line, bio, skills | button (added by renderResults)
   const card = element('article', 'result-card');
+  card.append(element('span', 'avatar', initials(alumnus.name)));
 
-  const top = element('div', 'card-top');
-  top.append(element('span', 'avatar', initials(alumnus.name)));
+  const main = element('div', 'card-main');
   const title = element('div', 'card-title');
   title.append(element('h3', '', alumnus.name));
   if (has(alumnus.company)) title.append(element('p', 'card-company', alumnus.company));
-  top.append(title);
-  card.append(top);
+  main.append(title);
 
-  const badges = element('div', 'badges');
-  if (has(alumnus.industry)) badges.append(element('span', 'badge', alumnus.industry));
-  if (has(alumnus.graduationYear)) badges.append(element('span', 'badge', `Class of ${alumnus.graduationYear}`));
-  if (badges.children.length) card.append(badges);
-
+  // "Software · Class of 2020 · Cairo · 3 km away" (only the parts the alum shows)
+  const meta = element('p', 'card-meta');
+  const addPart = (part) => {
+    if (meta.childNodes.length) meta.append(element('span', 'sep', '·'));
+    meta.append(part);
+  };
+  if (has(alumnus.industry)) addPart(alumnus.industry);
+  if (has(alumnus.graduationYear)) addPart(`Class of ${alumnus.graduationYear}`);
   // The city is a button: clicking it filters by that location.
   if (has(alumnus.location)) {
-    const where = element('p', 'card-location');
     const city = element('button', 'text-button', alumnus.location);
     city.type = 'button';
     city.title = `Show alumni in ${alumnus.location}`;
     city.addEventListener('click', () => searchFor('location', alumnus.location));
-    where.append(city);
-    if (typeof alumnus.distanceKm === 'number') where.append(` · ${alumnus.distanceKm} km away`);
-    card.append(where);
+    addPart(city);
   }
-  if (has(alumnus.bio)) card.append(element('p', 'card-bio', alumnus.bio));
+  if (typeof alumnus.distanceKm === 'number') addPart(`${alumnus.distanceKm} km away`);
+  if (meta.childNodes.length) main.append(meta);
+
+  if (has(alumnus.bio)) main.append(element('p', 'card-bio', alumnus.bio));
 
   if (Array.isArray(alumnus.skills) && alumnus.skills.length > 0) {
     const tags = element('ul', 'skill-tags');
@@ -103,8 +106,9 @@ function renderCard(alumnus) {
     });
     const extra = alumnus.skills.length - MAX_SKILLS_SHOWN;
     if (extra > 0) tags.append(element('li', 'tag tag-more', `+${extra}`));
-    card.append(tags);
+    main.append(tags);
   }
+  card.append(main);
   return card;
 }
 
@@ -139,16 +143,17 @@ function renderResults(results) {
   });
 }
 
-// Grey placeholder cards shown while the results load.
+// Grey placeholder rows shown while the results load.
 function renderLoadingCards() {
-  const cards = [];
-  for (let i = 0; i < 6; i += 1) {
-    const card = element('div', 'result-card skeleton');
-    card.append(element('span', 'bone bone-avatar'), element('span', 'bone bone-line'),
-      element('span', 'bone bone-line short'), element('span', 'bone bone-button'));
-    cards.push(card);
+  const rows = [];
+  for (let i = 0; i < 4; i += 1) {
+    const row = element('div', 'result-card skeleton');
+    const lines = element('span', 'bone-lines');
+    lines.append(element('span', 'bone bone-line'), element('span', 'bone bone-line short'));
+    row.append(element('span', 'bone bone-avatar'), lines, element('span', 'bone bone-button'));
+    rows.push(row);
   }
-  resultsBox.replaceChildren(...cards);
+  resultsBox.replaceChildren(...rows);
 }
 
 async function search(page) {
