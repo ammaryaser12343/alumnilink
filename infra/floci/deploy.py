@@ -1,6 +1,8 @@
 import base64
 import json
+import os
 import sys
+import tempfile
 from pathlib import Path
 
 import boto3
@@ -11,6 +13,7 @@ account = "000000000000"
 endpoint = "http://127.0.0.1:4566"
 origin = "http://localhost:4566"
 bucket = "alumnilink-accounts-web"
+photo_bucket = "alumnilink-profile-photos"
 log_group = f"/aws/lambda/{name}"
 
 routes = [
@@ -23,6 +26,12 @@ routes = [
     "PUT /api/profiles/me/skills",
     "GET /api/profiles/me/privacy",
     "PATCH /api/profiles/me/privacy",
+    "GET /api/profiles/me/photo",
+    "PUT /api/profiles/me/photo",
+    "DELETE /api/profiles/me/photo",
+    "GET /api/profiles/me/photo/audience",
+    "PATCH /api/profiles/me/photo/audience",
+    "GET /api/profiles/directory/photos",
     "GET /internal/profiles/{id}/contact",
 ]
 
@@ -53,11 +62,44 @@ def deploy_role():
         role = iam.get_role(RoleName=name)["Role"]
     policy = {
         "Version": "2012-10-17",
-        "Statement": [{"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
-                       "Resource": f"arn:aws:logs:{region}:{account}:log-group:{log_group}:*"}],
+        "Statement": [
+            {"Effect": "Allow", "Action": ["logs:CreateLogStream", "logs:PutLogEvents"],
+             "Resource": f"arn:aws:logs:{region}:{account}:log-group:{log_group}:*"},
+            {"Effect": "Allow", "Action": "s3:ListBucket", "Resource": f"arn:aws:s3:::{photo_bucket}"},
+            {"Effect": "Allow", "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+             "Resource": f"arn:aws:s3:::{photo_bucket}/profile-photos/*"},
+        ],
     }
     iam.put_role_policy(RoleName=name, PolicyName="write-accounts-logs", PolicyDocument=json.dumps(policy))
     return role["Arn"]
+
+
+def configure_photo_storage(settings):
+    s3 = client("s3")
+    if not any(item["Name"] == photo_bucket for item in s3.list_buckets().get("Buckets", [])):
+        s3.create_bucket(Bucket=photo_bucket)
+    s3.put_public_access_block(
+        Bucket=photo_bucket,
+        PublicAccessBlockConfiguration=dict(BlockPublicAcls=True, IgnorePublicAcls=True,
+                                            BlockPublicPolicy=True, RestrictPublicBuckets=True),
+    )
+
+    # Keep the same key when Lambda is redeployed or the Floci container is replaced.
+    key_path = Path("/app/data/alumnilink-profile-photo.key")
+    if not key_path.exists():
+        with tempfile.NamedTemporaryFile(dir=key_path.parent) as temporary_key:
+            temporary_key.write(os.urandom(32))
+            temporary_key.flush()
+            try:
+                os.link(temporary_key.name, key_path)
+            except FileExistsError:
+                pass
+    key = key_path.read_bytes()
+    if len(key) != 32:
+        raise ValueError("The saved Floci photo encryption key is invalid.")
+    settings["PROFILE_PHOTO_BUCKET"] = photo_bucket
+    settings["PROFILE_PHOTO_FLOCI_ENDPOINT"] = "http://floci:4566"
+    settings["PROFILE_PHOTO_FLOCI_KEY"] = base64.b64encode(key).decode()
 
 
 def deploy_lambda(role, settings):
@@ -82,7 +124,7 @@ def deploy_lambda(role, settings):
 
 def deploy_gateway(functions):
     gateway = client("apigatewayv2")
-    cors = dict(AllowOrigins=[origin], AllowMethods=["GET", "POST", "PATCH", "PUT", "OPTIONS"],
+    cors = dict(AllowOrigins=[origin], AllowMethods=["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
                 AllowHeaders=["authorization", "content-type"], ExposeHeaders=["x-request-id"])
     apis = gateway.get_apis()["Items"]
     api = next((resource for resource in apis if resource["Name"] == name), None)
@@ -134,8 +176,15 @@ def deploy_frontend(api_url):
         "alumnilink-badge.png": "image/png",
         "css/styles.css": "text/css", "css/profile.css": "text/css",
         "js/config.js": "text/javascript", "js/api.js": "text/javascript",
+        "js/nav.js": "text/javascript",
+        "fonts/outfit-latin-600-normal.woff2": "font/woff2",
+        "fonts/outfit-latin-700-normal.woff2": "font/woff2",
+        "fonts/work-sans-latin-400-normal.woff2": "font/woff2",
+        "fonts/work-sans-latin-500-normal.woff2": "font/woff2",
+        "fonts/work-sans-latin-600-normal.woff2": "font/woff2",
         "js/search.js": "text/javascript", "js/requests.js": "text/javascript",
         "js/profile-client.js": "text/javascript", "js/profile.js": "text/javascript",
+        "js/profile-photo.js": "text/javascript",
         "js/privacy.js": "text/javascript",
     }
     for asset, media_type in assets.items():
@@ -150,6 +199,7 @@ def deploy_frontend(api_url):
 
 def main():
     settings = json.load(sys.stdin)
+    configure_photo_storage(settings)
     role = deploy_role()
     functions = deploy_lambda(role, settings)
     api_url = deploy_gateway(functions)

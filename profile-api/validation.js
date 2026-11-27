@@ -104,7 +104,21 @@ function status(body) {
     invalid("isActive must be true or false.");
   return body.isActive;
 }
+function photoAudience(body) {
+  fields(body, ["audience"]);
+  if (!["private", "alumni", "students", "directory"].includes(body.audience))
+    invalid("Choose a supported photo audience.");
+  return body.audience;
+}
+function directoryPhotoIds(value) {
+  const ids = typeof value === "string" ? value.split(",") : [];
+  if (!ids.length || ids.length > 10) invalid("Send up to 10 profile IDs.");
+  return [...new Set(ids.map(id))];
+}
+
 module.exports = {
+  photoAudience,
+  directoryPhotoIds,
   fields,
   id,
   skills,

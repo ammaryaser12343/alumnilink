@@ -5,6 +5,8 @@ const { readFile } = require("node:fs/promises");
 const path = require("node:path");
 const { once } = require("node:events");
 const express = require("express");
+const sharp = require("sharp");
+const { MAX_PHOTO_BYTES } = require("../services/photoStore");
 const { signToken } = require("../../shared/auth");
 const { PGlite } = require("@electric-sql/pglite");
 const { createApp } = require("../app");
@@ -33,7 +35,9 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
     other: randomUUID(),
     student: randomUUID(),
     stranger: randomUUID(),
+    admin: randomUUID(),
   };
+  const roleFor = (name) => ({ student: "student", stranger: "student", admin: "admin" })[name] ?? "alumni";
   for (const [name, id] of Object.entries(userIds)) {
     await db.query(
       `INSERT INTO users(id,name,email,password_hash,role,account_status)
@@ -42,7 +46,7 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
         id,
         name,
         name + "@example.test",
-        ["student", "stranger"].includes(name) ? "student" : "alumni",
+        roleFor(name),
       ],
     );
   }
@@ -82,14 +86,20 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
   const base = await serve(teammate, t);
   const token = (name) => signToken({
     sub: userIds[name],
-    role: ["student", "stranger"].includes(name) ? "student" : "alumni",
+    role: roleFor(name),
   });
   const tokens = Object.fromEntries(
     Object.keys(userIds).map((name) => [name, token(name)]),
   );
   const logs = [];
+  const photos = new Map();
   const app = createApp({
     store: createStore(db),
+    photos: {
+      read: async (id) => photos.get(id),
+      save: async (id, photo) => photos.set(id, photo),
+      remove: async (id) => photos.delete(id),
+    },
     identity: createServiceClient({
       baseUrl: base,
       serviceKey: secret,
@@ -220,6 +230,116 @@ test("Profile and Privacy with real SQL and HTTP teammate test doubles", async (
       "Original",
     );
   });
+  await t.test("photo upload, validation, replacement, and owner-only access", async () => {
+    const route = "/api/profiles/me/photo";
+    const requestPhoto = (method = "GET", who = "alumni", body, type, suffix = "") =>
+      fetch(url + route + suffix, {
+        method,
+        headers: {
+          ...(who && { Authorization: "Bearer " + tokens[who] }),
+          ...(type && { "Content-Type": type }),
+        },
+        body,
+      });
+
+    assert.equal((await requestPhoto("GET", null)).status, 401);
+    assert.equal((await requestPhoto("GET", "student")).status, 403);
+    assert.equal((await requestPhoto("GET", "other")).status, 404);
+    assert.equal((await requestPhoto()).status, 204);
+
+    const png = await sharp({
+      create: { width: 40, height: 60, channels: 3, background: "red" },
+    }).png().withMetadata().toBuffer();
+    const jpeg = await sharp({
+      create: { width: 60, height: 40, channels: 3, background: "blue" },
+    }).jpeg().toBuffer();
+
+    const initial = await requestPhoto("PUT", "alumni", png, "image/png");
+    assert.equal(initial.status, 200);
+    assert.equal(initial.headers.get("content-type"), "image/webp");
+    assert.equal(initial.headers.get("cache-control"), "no-store");
+    const initialBytes = Buffer.from(await initial.arrayBuffer());
+    const metadata = await sharp(initialBytes).metadata();
+    assert.deepEqual([metadata.format, metadata.width, metadata.height], ["webp", 256, 256]);
+    assert.equal(metadata.exif, undefined);
+
+    assert.equal((await requestPhoto("PUT", "alumni", jpeg, "image/png")).status, 400);
+    assert.equal((await requestPhoto("PUT", "alumni", png, "image/svg+xml")).status, 415);
+    const oversized = await requestPhoto("PUT", "alumni", Buffer.alloc(MAX_PHOTO_BYTES + 1), "image/png");
+    assert.equal(oversized.status, 413);
+    assert.equal((await oversized.json()).error.code, "PHOTO_TOO_LARGE");
+    assert.deepEqual(Buffer.from(await (await requestPhoto()).arrayBuffer()), initialBytes);
+
+    const alternate = await createStore(db).saveProfile(userIds.other, { graduationYear: 2022 }, true);
+    assert.equal((await requestPhoto("GET", "other", undefined, undefined, "?profileId=" + profileId)).status, 204);
+    assert.equal((await requestPhoto("DELETE", "other", undefined, undefined, "?profileId=" + profileId)).status, 204);
+    assert.equal(photos.has(alternate.id), false);
+    assert.deepEqual(photos.get(profileId), initialBytes);
+
+    const replacement = await requestPhoto("PUT", "alumni", jpeg, "image/jpeg");
+    assert.equal(replacement.status, 200);
+    const replacementBytes = Buffer.from(await replacement.arrayBuffer());
+    assert.notDeepEqual(replacementBytes, initialBytes);
+    assert.deepEqual(Buffer.from(await (await requestPhoto()).arrayBuffer()), replacementBytes);
+
+    assert.equal((await requestPhoto("DELETE")).status, 204);
+    assert.equal((await requestPhoto("DELETE")).status, 204);
+    assert.equal((await requestPhoto()).status, 204);
+  });
+
+  await t.test("directory photos honor audience, ownership, and current account state", async () => {
+    const audiencePath = "/api/profiles/me/photo/audience";
+    const list = (who, ids = profileId) =>
+      api("/api/profiles/directory/photos?ids=" + ids, "GET", null, who);
+    const set = (audience, who = "alumni") =>
+      api(audiencePath, "PATCH", { audience }, who);
+    const sample = await sharp({
+      create: { width: 10, height: 10, channels: 3, background: "red" },
+    }).webp().toBuffer();
+    photos.set(profileId, sample);
+    const allowedPhoto = { [profileId]: sample.toString("base64") };
+
+    assert.deepEqual((await api(audiencePath)).body, { audience: "private" });
+    assert.equal((await list(null)).status, 401);
+    assert.equal((await list("student", "invalid")).status, 400);
+    assert.equal((await set("public")).status, 400);
+    assert.equal((await set("directory", "student")).status, 403);
+    assert.deepEqual((await list("other")).body.photos, {});
+    assert.deepEqual((await list("student")).body.photos, {});
+
+    assert.deepEqual((await set("students")).body, { audience: "students" });
+    assert.deepEqual((await list("student")).body.photos, allowedPhoto);
+    assert.deepEqual((await list("other")).body.photos, {});
+    assert.deepEqual((await list("admin")).body.photos, {});
+    await set("directory", "other");
+    assert.deepEqual((await api(audiencePath)).body, { audience: "students" });
+
+    await set("alumni");
+    assert.deepEqual((await list("student")).body.photos, {});
+    assert.deepEqual((await list("other")).body.photos, allowedPhoto);
+    assert.deepEqual((await list("admin")).body.photos, {});
+
+    await set("directory");
+    for (const viewer of ["student", "other", "admin"]) {
+      assert.deepEqual((await list(viewer)).body.photos, allowedPhoto);
+    }
+    await db.query("UPDATE users SET account_status='suspended' WHERE id=$1", [userIds.student]);
+    assert.equal((await list("student")).status, 403);
+    await db.query("UPDATE users SET account_status='active' WHERE id=$1", [userIds.student]);
+    await api("/api/profiles/me/status", "PATCH", { isActive: false });
+    assert.deepEqual((await list("other")).body.photos, {});
+    await api("/api/profiles/me/status", "PATCH", { isActive: true });
+    await db.query("UPDATE users SET account_status='suspended' WHERE id=$1", [userIds.alumni]);
+    assert.deepEqual((await list("other")).body.photos, {});
+    await db.query("UPDATE users SET account_status='active' WHERE id=$1", [userIds.alumni]);
+
+    await set("private");
+    assert.deepEqual((await list("student")).body.photos, {});
+    assert.deepEqual((await list("admin")).body.photos, {});
+    assert.deepEqual(photos.get(profileId), sample);
+    photos.delete(profileId);
+  });
+
   await t.test(
     "privacy choices default hidden and updates remain owner-scoped",
     async () => {

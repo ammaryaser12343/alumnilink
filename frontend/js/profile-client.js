@@ -3,9 +3,9 @@ window.profileClient = (() => {
   const status = document.getElementById("status");
   const tokenKey = config.DEMO_SESSION_URL ? "alumnilink.accessToken" : "token";
   let token = sessionStorage.getItem(tokenKey);
-  function message(text, error = false) {
-    status.textContent = text;
-    status.classList.toggle("error", error);
+  function message(text, error = false, target = status) {
+    target.textContent = text;
+    target.classList.toggle("error", error);
   }
   async function request(path, method = "GET", body) {
     if (!token)
@@ -26,18 +26,23 @@ window.profileClient = (() => {
         throw new Error("Start the local demo in PowerShell to continue testing.");
       }
     }
+    const photoUpload = body instanceof Blob;
     let response;
     try {
       response = await fetch((config.PROFILE_API_URL ?? "") + path, {
         method,
         headers: {
           Authorization: "Bearer " + token,
-          ...(body ? { "Content-Type": "application/json" } : {}),
+          ...(body ? { "Content-Type": photoUpload ? body.type : "application/json" } : {}),
         },
-        body: body ? JSON.stringify(body) : undefined,
+        body: photoUpload ? body : JSON.stringify(body),
       });
     } catch {
       throw new Error("Profile service is unavailable. Please retry.");
+    }
+    if (response.status === 204) return null;
+    if (response.ok && response.headers.get("Content-Type") === "image/webp") {
+      return response.blob();
     }
     const result = await response.json().catch(() => null);
     if (!response.ok) {

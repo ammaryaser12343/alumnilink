@@ -8,6 +8,8 @@ pwsh -File .\infra\floci\deploy.ps1
 
 The script packages profile-api and its token verifier, updates the existing local Lambda and API Gateway, removes the old identity routes from Ahmed's API, and uploads the combined Search, Contact Requests, Profile and Privacy frontend to S3. The Profile demo uses stand-in Identity and Locations services. Search and Contact Requests need their own configured Search API and compatible login. The original AWS resource name alumnilink-accounts is retained to update the earlier demonstration in place. Runtime configuration now comes from profile-api/.env and uses the restricted Neon database login. Migration owner credentials are excluded from Lambda configuration.
 
+The profile photo section uses a separate S3 bucket called `alumnilink-profile-photos`. The deploy script provisions it and stores the encryption key in the Floci volume. Keep that volume to keep access to saved photos. Save a profile, choose a JPEG or PNG, then click **Upload photo**. Refresh to check persistence and use **Remove photo** to clear it. To enable audience choices, apply the Profile migration before deploying. Use `-Migrate` with the deployment script when your local settings point at the database you intend to update.
+
 Docker Compose retains the earlier local PostgreSQL volume for the previous demo. The revised Profile Lambda uses the configured Neon DATABASE_URL. Docker volumes preserve Floci resources between restarts.
 
 The runtime uses API Gateway, Lambda, CloudWatch Logs, an IAM log-writing role and S3 hosting. The browser pages are at:

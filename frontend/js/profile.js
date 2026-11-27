@@ -1,9 +1,14 @@
 const { request, message } = window.profileClient;
 const form = document.getElementById("profile");
 const toggle = document.getElementById("toggle-profile");
+const directory = document.getElementById("profile-directory");
+const activeState = document.getElementById("active-state");
+const directoryStatus = document.getElementById("profile-directory-status");
+const saveStatus = document.getElementById("profile-save-status");
 let current;
 form.elements.graduationYear.max = new Date().getUTCFullYear();
 function render(profile) {
+  const profileLoaded = !current && profile;
   current = profile;
   for (const field of [
     "graduationYear",
@@ -16,16 +21,15 @@ function render(profile) {
     form.elements[field].value = profile?.[field] ?? "";
   }
   form.elements.skills.value = profile?.skills.join(", ") ?? "";
-  toggle.hidden = !profile;
+  directory.hidden = !profile;
   toggle.textContent = profile?.isActive
     ? "Deactivate profile"
     : "Reactivate profile";
-  document.getElementById("active-state").textContent = profile
-    ? profile.isActive
-      ? "Your profile is active."
-      : "Your profile is hidden from the directory. You can still sign in and edit it."
-    : "";
+  activeState.textContent = profile?.isActive ? "Active in directory" : "Hidden from directory";
+  activeState.classList.toggle("is-active", Boolean(profile?.isActive));
   form.hidden = false;
+  if (!profile) window.profilePhoto.showBeforeCreation();
+  if (profileLoaded) window.profilePhoto.load();
 }
 (async () => {
   try {
@@ -40,6 +44,7 @@ form.addEventListener("submit", async (event) => {
   const submit = form.querySelector('[type="submit"]');
   submit.disabled = true;
   toggle.disabled = true;
+  message("", false, saveStatus);
   const fields = Object.fromEntries(new FormData(form));
   const body = {
     graduationYear: Number(fields.graduationYear),
@@ -64,9 +69,9 @@ form.addEventListener("submit", async (event) => {
         )
       ).profile,
     );
-    message("Profile saved.");
+    message("Profile saved.", false, saveStatus);
   } catch (error) {
-    message(error.message, true);
+    message(error.message, true, saveStatus);
   } finally {
     submit.disabled = false;
     toggle.disabled = false;
@@ -74,6 +79,7 @@ form.addEventListener("submit", async (event) => {
 });
 toggle.addEventListener("click", async () => {
   toggle.disabled = true;
+  message("", false, directoryStatus);
   try {
     render(
       (
@@ -82,9 +88,9 @@ toggle.addEventListener("click", async () => {
         })
       ).profile,
     );
-    message(current.isActive ? "Profile reactivated." : "Profile deactivated.");
+    message(current.isActive ? "Profile reactivated." : "Profile deactivated.", false, directoryStatus);
   } catch (error) {
-    message(error.message, true);
+    message(error.message, true, directoryStatus);
   } finally {
     toggle.disabled = false;
   }

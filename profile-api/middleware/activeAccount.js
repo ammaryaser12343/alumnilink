@@ -38,4 +38,13 @@ function createAlumniAccess(requireActiveAccount) {
   };
 }
 
-module.exports = { createActiveAccountCheck, createAlumniAccess };
+function createDirectoryAccess(requireActiveAccount) {
+  return async function directory(req, _res, next) {
+    const claims = verifyUser(bearer(req));
+    await requireActiveAccount(claims, claims.role, req.requestId);
+    req.directoryRole = claims.role;
+    next();
+  };
+}
+
+module.exports = { createActiveAccountCheck, createAlumniAccess, createDirectoryAccess };

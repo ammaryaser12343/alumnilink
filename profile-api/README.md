@@ -37,6 +37,9 @@ Vercel loads the Express app exported by `app.js`. The same app is used by `serv
 | GET / PUT | /api/profiles/me/skills | Read or atomically replace normalized skills |
 | GET / PATCH | /api/profiles/me/privacy | Read or update the owner's visibility choices |
 | PATCH | /api/profiles/me/status | Set profile isActive without changing the account |
+| GET / PUT / DELETE | /api/profiles/me/photo | Read, upload/replace, or remove the owner's photo |
+| GET / PATCH | /api/profiles/me/photo/audience | Read or save the owner's photo audience |
+| GET | /api/profiles/directory/photos?ids=... | Read authorized directory thumbnails for up to ten profile IDs |
 | GET | /internal/profiles/:id/contact?requestId=:requestId | Return contact email after verifying accepted consent |
 | GET | /api/health | Liveness |
 
@@ -45,6 +48,12 @@ Profile JSON uses graduationYear, company, industry, bio, contactEmail, location
 All public profile operations require an active Alumni account. The backend derives ownership from the verified token. Profile writes and related skill changes use one SQL transaction on a single database client. Location resolution occurs before that transaction. A failed lookup preserves the previous profile.
 
 The contact endpoint checks the shared X-Service-Key header and verifies the original Student or Alumni sender token from X-User-Token. The database checks the accepted request's sender and target, current account eligibility and profile activity, and requires the sender and recipient to be different accounts. Responses and logs exclude contact email except for the permitted contact response.
+
+## Profile photos
+
+Save the profile first, then use the Profile photo section. The owner route accepts a raw JPEG or PNG body up to 2 MiB and 16 megapixels. It applies image orientation and returns a 256Ã—256 WebP thumbnail with metadata removed. GET returns 204 when there is no photo. PUT replaces the same object and DELETE clears it. Directory photos default to **Only me**. Owners can switch to Students, Alumni, or everyone in the signed-in directory. The directory endpoint checks the viewer's current role and requires the alumnus and their profile to be active. It returns only authorized thumbnail bytes and sends no storage URLs.
+
+The object key is derived from the existing profile ID. Run `npm run db:migrate` to add `photo_audience` with a private default for existing and new profiles. Floci provisions a dedicated bucket and encrypts each photo before writing it because the emulator can serve unsigned object URLs. Its encryption key persists in the Floci Docker volume. On Vercel, connect a **private** Blob store to the Profile project. The backend uses the connected `BLOB_STORE_ID` or `BLOB_READ_WRITE_TOKEN`. Without storage configured, only the photo routes return a storage configuration error.
 
 ## Database migration
 
