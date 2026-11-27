@@ -1,6 +1,6 @@
 const { ApiError } = require("../errors");
 const validate = require("../validation");
-const { resizePhoto } = require("../services/photoStore");
+const { resizePhoto, directoryThumbnail } = require("../services/photoStore");
 
 function requireProfile(value) {
   if (!value)
@@ -58,8 +58,11 @@ function createProfilesController({ store, locations, photos }) {
       const ids = validate.directoryPhotoIds(req.query.ids);
       const visible = photos ? await store.findDirectoryPhotoIds(ids, req.directoryRole) : [];
       const entries = await Promise.all(visible.map(async (id) => {
-        const photo = await withPhotoStore(() => photos.read(id));
-        return photo ? [id, photo.toString("base64")] : null;
+        const thumbnail = await withPhotoStore(async () => {
+          const photo = await photos.read(id);
+          return photo ? directoryThumbnail(photo) : null;
+        });
+        return thumbnail ? [id, thumbnail.toString("base64")] : null;
       }));
       res.json({ photos: Object.fromEntries(entries.filter(Boolean)) });
     },
@@ -72,9 +75,9 @@ function createProfilesController({ store, locations, photos }) {
     async savePhoto(req, res) {
       const { id } = requireProfile(await store.findProfile(req.userId));
       const photo = await withPhotoStore(async () => {
-        const thumbnail = await resizePhoto(req.body, req.is(["image/jpeg", "image/png"]));
-        await photos.save(id, thumbnail);
-        return thumbnail;
+        const resized = await resizePhoto(req.body, req.is(["image/jpeg", "image/png"]));
+        await photos.save(id, resized);
+        return resized;
       });
       res.type("webp").send(photo);
     },

@@ -37,7 +37,9 @@
           <div class="profile-photo-stage">
             <div class="photo-frame">
               <span class="photo-placeholder" aria-hidden="true"></span>
-              <img id="photo-preview" alt="Your profile photo" width="128" height="128" hidden />
+              <button class="photo-open" id="photo-open" type="button" aria-label="View profile photo" aria-haspopup="dialog" hidden disabled>
+                <img id="photo-preview" alt="" width="128" height="128" />
+              </button>
             </div>
           </div>
           <div class="settings-panel-body photo-controls">
@@ -94,5 +96,14 @@
         </form>
       </div>
     </main>
+    <dialog id="photo-viewer" class="photo-viewer" aria-labelledby="photo-viewer-title">
+      <div class="photo-viewer-bar">
+        <h3 id="photo-viewer-title">Profile photo</h3>
+        <form method="dialog">
+          <button type="submit" class="secondary" autofocus>Close</button>
+        </form>
+      </div>
+      <img id="photo-viewer-image" alt="Your profile photo" />
+    </dialog>
   </body>
 </html>
