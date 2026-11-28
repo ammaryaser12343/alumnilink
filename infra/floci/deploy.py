@@ -174,9 +174,9 @@ def deploy_frontend(api_url):
         "index.html": "text/html", "requests.html": "text/html",
         "profile.html": "text/html", "privacy.html": "text/html",
         "alumnilink-badge.png": "image/png",
-        "css/styles.css": "text/css", "css/profile.css": "text/css",
+        "css/styles.css": "text/css", "css/profile.css": "text/css", "css/theme.css": "text/css",
         "js/config.js": "text/javascript", "js/api.js": "text/javascript",
-        "js/nav.js": "text/javascript",
+        "js/nav.js": "text/javascript", "js/theme.js": "text/javascript",
         "fonts/outfit-latin-600-normal.woff2": "font/woff2",
         "fonts/outfit-latin-700-normal.woff2": "font/woff2",
         "fonts/work-sans-latin-400-normal.woff2": "font/woff2",
@@ -205,6 +205,7 @@ def main():
     api_url = deploy_gateway(functions)
     deploy_frontend(api_url)
     print(f"API Gateway  {api_url}")
+    print(f"API health   {api_url}/api/health")
     print(f"Browser app  {origin}/{bucket}/profile.html")
     print(f"CloudWatch   {log_group}")
     print(f"Floci Dash   {origin}/_floci/ui")

@@ -1,10 +1,19 @@
 # Profile and Privacy deployment
 
-From the repository root, with Docker Desktop and Node.js 24 available:
+On Windows, start Docker Desktop and use Node.js 24. Clone the team repository so the Profile package can use the shared files under `infra/floci`, `shared` and `frontend`.
+
+1. Copy `profile-api/.env.example` to `profile-api/.env` and set the restricted runtime `DATABASE_URL`. Set the team secrets and reachable Identity and Search URLs for protected operations. From Lambda, use `host.docker.internal` for services running on the Windows host.
+2. Create `infra/floci/.env.floci` with a `POSTGRES_PASSWORD` for the local Compose PostgreSQL container. Keep both configuration files local.
+3. From `profile-api`, deploy and open the printed **API health** address. Expect HTTP 200 and `"status":"ok"`.
+4. After opening the health address, read the Profile Lambda request log in CloudWatch.
 
 ```powershell
-pwsh -File .\infra\floci\deploy.ps1
+cd profile-api
+npm run aws:deploy
+npm run aws:logs
 ```
+
+Pass a lookback in minutes with `npm run aws:logs -- 120`. For an intentionally configured migration, use `npm run aws:deploy -- -Migrate`.
 
 The script packages profile-api and its token verifier, updates the existing local Lambda and API Gateway, removes the old identity routes from Ahmed's API, and uploads the combined Search, Contact Requests, Profile and Privacy frontend to S3. The Profile demo uses stand-in Identity and Locations services. Search and Contact Requests need their own configured Search API and compatible login. The original AWS resource name alumnilink-accounts is retained to update the earlier demonstration in place. Runtime configuration now comes from profile-api/.env and uses the restricted Neon database login. Migration owner credentials are excluded from Lambda configuration.
 
