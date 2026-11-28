@@ -48,6 +48,16 @@ docker compose --env-file .\infra\floci\.env.floci -f .\infra\floci\compose.yaml
 ```
 
 
+## Optional REST health gateway for the Floci dashboard
+
+The Profile deployment uses an HTTP API (API Gateway v2) for the application. The Floci dashboard's API Gateway page lists REST APIs (v1). To show a gateway there, first deploy Profile as above. Then run this command from the repository root in PowerShell.
+
+```powershell
+Get-Content -Raw .\infra\floci\deploy-health-gateway.py | docker exec -i alumnilink-floci-1 python3 -
+```
+
+Refresh **API Gateway** in the Floci dashboard and select `alumnilink-profile-health`. Open the printed health URL to call `GET /api/health` on the existing Profile Lambda. The optional gateway serves only that route. The website continues to use the original HTTP API.
+
 ## Inspect the browser and Neon together
 
 From Windows PowerShell in the repository root, open Docker Desktop and start the saved stack:
