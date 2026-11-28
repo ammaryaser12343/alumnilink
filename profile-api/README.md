@@ -21,6 +21,10 @@ The local server listens on port 3001 by default. Configure the variables in .en
 - `db/` contains migrations and database setup, `test/` contains automated tests, and `scripts/` contains local Floci checks.
 - `app.js` wires the routes and shared request handling. `server.js` starts the local API, and `lambda.js` runs it on Floci.
 
+## Floci
+
+From this folder on Windows, `npm run aws:deploy` packages Profile for Lambda and provisions its API Gateway, IAM role, S3 buckets and CloudWatch log group. Open the printed API health address, then run `npm run aws:logs` for the recent Profile request log. Set up Docker and the ignored runtime configuration using the [Floci instructions](../infra/floci/README.md).
+
 ## Vercel
 
 Use `profile-api` as the Vercel project root with the Express preset. Enable the build setting that includes source outside that root, since authentication imports `shared/auth.js` from the team repo. Set the runtime values from `.env.example` in the project settings. The database migration uses its own credentials outside the hosted app.
